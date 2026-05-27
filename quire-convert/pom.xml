@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.quire</groupId>
+        <artifactId>quire</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quire-convert</artifactId>
+    <name>Quire Convert</name>
+    <description>Format conversion pipeline — Phase 2 placeholder. No code in Phase 1.</description>
+
+    <!--
+        Phase 2 placeholder. This module exists to establish the module graph.
+        No source code is written here in Phase 1.
+        Phase 2 will add: HTML, DOCX, ODT conversion via Playwright and LibreOffice.
+    -->
+</project>

@@ -1,0 +1,131 @@
+name: Imposition / page order error
+description: Pages are in the wrong order or wrong position after imposition
+title: "[Imposition]: "
+labels: ["bug", "imposition", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Imposition errors — where pages appear in the wrong order after printing and folding —
+        are the most critical class of bug in Quire. Please provide as much detail as possible.
+        A wrong imposition produces an unbound book and wasted paper.
+
+  - type: dropdown
+    id: group
+    attributes:
+      label: Which imposition group?
+      options:
+        - "Group A — single sheet / flat (perfect binding, spiral, etc.)"
+        - "Group B — single signature (saddle stitch, pamphlet, booklet)"
+        - "Group C — multiple signatures (sewn signatures, hardcover, Coptic)"
+        - Unsure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: technique
+    attributes:
+      label: Binding technique
+      options:
+        - Saddle stitch
+        - Pamphlet
+        - Booklet
+        - Sewn signatures
+        - Hardcover / case binding
+        - Perfect binding
+        - Coptic binding
+        - Spiral / coil binding
+        - Japanese stab binding
+    validations:
+      required: true
+
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Reading direction
+      options:
+        - LTR (left-to-right)
+        - RTL (right-to-left)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layout
+    attributes:
+      label: Imposition layout
+      options:
+        - Folio (2 pages per side, 1 fold)
+        - Quarto (4 pages per side, 2 folds)
+        - Octavo (8 pages per side, 3 folds)
+    validations:
+      required: true
+
+  - type: input
+    id: page-count
+    attributes:
+      label: Total page count (including all padding)
+      placeholder: "e.g. 32"
+    validations:
+      required: true
+
+  - type: input
+    id: signature-size
+    attributes:
+      label: Signature size (Group C only)
+      placeholder: "e.g. 16"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-went-wrong
+    attributes:
+      label: What was wrong with the output?
+      description: |
+        Describe the page order error. If possible, describe which page appeared where —
+        e.g. "Sheet 1 front showed pages 4 and 29 but I expected pages 32 and 1."
+      placeholder: |
+        After printing and folding, the first spread showed pages 5 and 28
+        instead of pages 1 and 32.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-order
+    attributes:
+      label: What order did you expect?
+      description: If you know the correct page order for your setup, describe it here.
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Quire version
+      placeholder: "e.g. 1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS 14 (Sonoma)
+        - macOS 13 (Ventura)
+        - macOS 12 (Monterey)
+        - Ubuntu / Debian Linux
+        - Fedora / RHEL Linux
+        - Other Linux
+        - Web browser
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+    validations:
+      required: false

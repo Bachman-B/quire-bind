@@ -1,0 +1,87 @@
+name: Feature request
+description: Suggest a new feature or improvement
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement to Quire.
+        Please check the existing issues first to see if someone has already suggested the same thing.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this relate to?
+      options:
+        - Binding technique support (new technique)
+        - Page preparation
+        - Imposition
+        - Page numbering
+        - Print marks
+        - Binding guides / documentation
+        - Batch processing
+        - Visualizations
+        - User interface
+        - Accessibility
+        - Internationalisation / new language
+        - Performance
+        - Distribution / installation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation where you need this feature.
+      placeholder: "When binding a book with more than 200 pages, I need to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the feature you would like
+      description: As clearly as you can — what should Quire do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Have you tried any workarounds?
+      description: How are you currently handling this without the feature?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Is this related to a planned Phase 2 / Phase 3 feature?
+      description: >
+        Some features are already planned. Phase 2 — full creep PDF application,
+        quarto and octavo imposition, extended sewing hole configuration, and multi-format
+        input (HTML, DOCX, ODT). Phase 3 — XML/FO, Markdown, and LaTeX input, plus a margin
+        adjustment tool for fixed-layout PDFs.
+      options:
+        - "No — this is a new idea"
+        - "Yes — creep compensation (Phase 2)"
+        - "Yes — quarto / octavo imposition (Phase 2)"
+        - "Yes — sewing hole configuration (Phase 2)"
+        - "Yes — multi-format input: HTML / DOCX / ODT (Phase 2)"
+        - "Yes — multi-format input: XML / Markdown / LaTeX (Phase 3)"
+        - "Yes — margin adjustment tool (Phase 3)"
+        - "Unsure"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: References, examples from other tools, sketches, or anything else helpful.
+    validations:
+      required: false

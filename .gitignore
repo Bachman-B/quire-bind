@@ -1,0 +1,13 @@
+target/
+*.class
+*.jar
+*.war
+*.iml
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+*.log
+quire-project-docs/
+quire-project-docs.zip
+.claude/

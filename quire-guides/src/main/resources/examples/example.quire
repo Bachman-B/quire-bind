@@ -1,0 +1,94 @@
+quire_version: "1.0"
+
+# Quire batch configuration file
+# Process this file with: java -jar quire-batch.jar --config this-file.quire
+# Dry run (no output written): java -jar quire-batch.jar --config this-file.quire --dry-run
+
+defaults:
+  reading_direction: ltr
+  paper_size: a4
+  numbering:
+    body_style: arabic
+    body_start: 1
+    suppress_first_body_folio: true
+  marks:
+    fold_lines: true
+    signature_proof_markers: true
+
+jobs:
+  - name: "Sewn signatures example"
+    source: "./input/manuscript.pdf"
+    output: "./output/manuscript-imposed.pdf"
+    technique: sewn_signatures
+    layout: folio
+    signature_size: 16
+    reading_direction: ltr
+    paper_size: a4
+    padding:
+      aesthetic_front: 2
+      aesthetic_rear: 2
+      completion_front: 0
+      completion_rear: 0        # app calculates and places all completion pages at rear
+    numbering:
+      front_matter_style: roman
+      body_style: arabic
+      body_start: 1
+      suppress_first_body_folio: true
+    creep:
+      paper_weight_gsm: 90
+    marks:
+      fold_lines: true
+      signature_proof_markers: true
+
+  - name: "Saddle stitch pamphlet"
+    source: "./input/pamphlet.pdf"
+    output: "./output/pamphlet-imposed.pdf"
+    technique: saddle_stitch
+    layout: folio
+    reading_direction: ltr
+    paper_size: a5
+    padding:
+      aesthetic_front: 0
+      aesthetic_rear: 0
+    numbering:
+      body_style: arabic
+      body_start: 1
+    marks:
+      fold_lines: true
+      signature_proof_markers: false
+
+  - name: "RTL Hebrew binding example"
+    source: "./input/hebrew-text.pdf"
+    output: "./output/hebrew-imposed.pdf"
+    technique: sewn_signatures
+    layout: folio
+    signature_size: 16
+    reading_direction: rtl
+    paper_size: a4
+    padding:
+      aesthetic_front: 2
+      aesthetic_rear: 2
+    numbering:
+      front_matter_style: roman
+      body_style: arabic
+      body_start: 1
+    marks:
+      fold_lines: true
+      signature_proof_markers: true
+
+  - name: "Perfect binding — no imposition"
+    source: "./input/novel.pdf"
+    output: "./output/novel-perfect.pdf"
+    technique: perfect_binding
+    layout: folio
+    reading_direction: ltr
+    paper_size: a5
+    padding:
+      aesthetic_front: 1
+      aesthetic_rear: 1
+    numbering:
+      body_style: arabic
+      body_start: 1
+    marks:
+      fold_lines: false
+      signature_proof_markers: false

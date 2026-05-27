@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Browse existing issues
+    url: https://github.com/Bachman-B/quire/issues
+    about: Check if your bug or request has already been reported before opening a new issue.
+  - name: Test reports and coverage
+    url: https://bachman-b.github.io/quire/reports/
+    about: View the latest test results and code coverage reports.
+  - name: Dependencies and licences
+    url: https://bachman-b.github.io/quire/dependencies/
+    about: View all third-party libraries used by Quire and their licences.
