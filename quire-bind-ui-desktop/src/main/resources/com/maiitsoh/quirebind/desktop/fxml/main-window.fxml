@@ -345,6 +345,7 @@
                             <Label text="Imposition Summary" styleClass="section-label"/>
                             <TableView fx:id="signaturesTable" VBox.vgrow="ALWAYS">
                                 <columns>
+                                    <TableColumn fx:id="colZone"       text="Zone"   prefWidth="90"/>
                                     <TableColumn fx:id="colSigIndex"   text="#"      prefWidth="44"/>
                                     <TableColumn fx:id="colPageCount"  text="Pages"  prefWidth="70"/>
                                     <TableColumn fx:id="colSheetCount" text="Sheets" prefWidth="70"/>

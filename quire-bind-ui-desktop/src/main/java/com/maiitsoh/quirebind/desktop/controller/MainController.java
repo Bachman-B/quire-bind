@@ -20,14 +20,16 @@ package com.maiitsoh.quirebind.desktop.controller;
 
 import com.maiitsoh.quirebind.batch.parser.QuireFileParser;
 import com.maiitsoh.quirebind.core.binding.BindingGroupMapper;
-import com.maiitsoh.quirebind.core.imposition.ImpositionEngine;
+import com.maiitsoh.quirebind.core.imposition.FolioAssigner;
+import com.maiitsoh.quirebind.core.imposition.PagePaddingApplier;
+import com.maiitsoh.quirebind.core.imposition.SignatureComposer;
 import com.maiitsoh.quirebind.core.model.BindingTechnique;
-import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.FolioStyle;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.ImpositionGroup;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
@@ -37,7 +39,6 @@ import com.maiitsoh.quirebind.core.model.PageSequence;
 import com.maiitsoh.quirebind.core.model.PageType;
 import com.maiitsoh.quirebind.core.model.PaperSize;
 import com.maiitsoh.quirebind.core.model.QuirePage;
-import com.maiitsoh.quirebind.core.model.QuireProject;
 import com.maiitsoh.quirebind.core.model.ReadingDirection;
 import com.maiitsoh.quirebind.core.model.Signature;
 import com.maiitsoh.quirebind.core.pdf.PdfImpositionWriter;
@@ -167,6 +168,7 @@ public final class MainController implements Initializable {
     @FXML private ComboBox<FolioPosition> folioPositionCombo;
     @FXML private CheckBox suppressFirstFolioCheck;
     @FXML private TableView<SignatureRow> signaturesTable;
+    @FXML private TableColumn<SignatureRow, String> colZone;
     @FXML private TableColumn<SignatureRow, Number> colSigIndex;
     @FXML private TableColumn<SignatureRow, Number> colPageCount;
     @FXML private TableColumn<SignatureRow, Number> colSheetCount;
@@ -180,7 +182,7 @@ public final class MainController implements Initializable {
     private int currentStep = 0;
     private ToggleGroup modeToggleGroup;
     private ToggleGroup paddingToggleGroup;
-    private final Set<Integer> collapsedSignatures = new HashSet<>();
+    private final Set<Integer> expandedSignatures = new HashSet<>();
     private final Set<String> collapsedZones = new HashSet<>();
     private final Map<Integer, Image> thumbnailCache = new HashMap<>();
     private final Map<Integer, String> pageLabels = new HashMap<>();
@@ -266,6 +268,7 @@ public final class MainController implements Initializable {
         pageListView.setCellFactory(lv -> new PageListCell(this::toggleSignatureCollapse));
 
         // Imposition table columns
+        colZone.setCellValueFactory(r -> new SimpleStringProperty(r.getValue().zone()));
         colSigIndex.setCellValueFactory(r -> new SimpleIntegerProperty(r.getValue().index()));
         colPageCount.setCellValueFactory(
             r -> new SimpleIntegerProperty(r.getValue().pageCount()));
@@ -283,7 +286,7 @@ public final class MainController implements Initializable {
     @FXML
     private void handleMenuNewProject() {
         state.reset();
-        collapsedSignatures.clear();
+        expandedSignatures.clear();
         pdfPathField.clear();
         pageCountLabel.setText("");
         quirePathField.clear();
@@ -459,8 +462,14 @@ public final class MainController implements Initializable {
         PageSequence clean = new PageSequence(pages);
         state.setPageSequence(clean);
 
+        int frontCount = state.getFrontMatterPageCount();
+        int rearCount = state.getRearMatterPageCount();
         int total = clean.pageCount();
-        int remainder = total % pps;
+        int bodyStart = Math.min(frontCount, total);
+        int bodyEnd = Math.max(bodyStart, total - rearCount);
+        int bodyCount = bodyEnd - bodyStart;
+
+        int remainder = bodyCount % pps;
         if (remainder == 0) {
             return;
         }
@@ -472,9 +481,12 @@ public final class MainController implements Initializable {
                 .pageType(PageType.COMPLETION_BLANK)
                 .build();
             if (state.getPaddingPosition() == PaddingPosition.BEFORE) {
-                clean.insertPage(0, blank);
+                clean.insertPage(bodyStart, blank);
+                bodyStart++;
+                bodyEnd++;
             } else {
-                clean.insertPage(clean.pageCount(), blank);
+                clean.insertPage(bodyEnd, blank);
+                bodyEnd++;
             }
         }
         clean.reindex();
@@ -719,10 +731,10 @@ public final class MainController implements Initializable {
     }
 
     private void toggleSignatureCollapse(int sigNum) {
-        if (collapsedSignatures.contains(sigNum)) {
-            collapsedSignatures.remove(sigNum);
+        if (expandedSignatures.contains(sigNum)) {
+            expandedSignatures.remove(sigNum);
         } else {
-            collapsedSignatures.add(sigNum);
+            expandedSignatures.add(sigNum);
         }
         rebuildPageList();
     }
@@ -858,23 +870,30 @@ public final class MainController implements Initializable {
             thumbnailCheck.setSelected(false);
             return;
         }
-        startThumbnailLoading(pdf, seq.pageCount());
+        startThumbnailLoading(pdf, seq);
     }
 
-    private void startThumbnailLoading(Path pdf, int pageCount) {
+    private void startThumbnailLoading(Path pdf, PageSequence seq) {
         Task<Map<Integer, Image>> task = new Task<>() {
             @Override
             protected Map<Integer, Image> call() throws Exception {
                 Map<Integer, Image> cache = new HashMap<>();
+                List<QuirePage> seqPages = seq.getPages();
+                int total = seqPages.size();
                 try (PDDocument doc = Loader.loadPDF(pdf.toFile())) {
                     PDFRenderer renderer = new PDFRenderer(doc);
-                    for (int i = 0; i < pageCount && !isCancelled(); i++) {
-                        updateProgress(i, pageCount);
-                        updateMessage("Page " + (i + 1) + " / " + pageCount);
-                        BufferedImage bi = renderer.renderImageWithDPI(i, 72);
+                    for (int seqIdx = 0; seqIdx < total && !isCancelled(); seqIdx++) {
+                        updateProgress(seqIdx, total);
+                        updateMessage("Page " + (seqIdx + 1) + " / " + total);
+                        QuirePage page = seqPages.get(seqIdx);
+                        if (page.getSourcePageIndex().isEmpty()) {
+                            continue;
+                        }
+                        int pdfIdx = page.getSourcePageIndex().get();
+                        BufferedImage bi = renderer.renderImageWithDPI(pdfIdx, 72);
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         ImageIO.write(bi, "png", baos);
-                        cache.put(i, new Image(new ByteArrayInputStream(baos.toByteArray())));
+                        cache.put(seqIdx, new Image(new ByteArrayInputStream(baos.toByteArray())));
                     }
                 }
                 return cache;
@@ -972,7 +991,7 @@ public final class MainController implements Initializable {
                 || (relPos == 0);
             if (isSigStart) {
                 currentSig++;
-                boolean collapsed = collapsedSignatures.contains(currentSig);
+                boolean collapsed = !expandedSignatures.contains(currentSig);
                 String arrow = collapsed ? "▶" : "▼";
                 int sigPageCount = Math.min(pps, bodyEnd - i);
                 String overflow = (group == ImpositionGroup.C && sigPageCount < pps)
@@ -981,7 +1000,7 @@ public final class MainController implements Initializable {
                     arrow + " Signature " + currentSig
                     + "  (" + sigPageCount + "/" + pps + " pages)" + overflow));
             }
-            if (!collapsedSignatures.contains(currentSig)) {
+            if (expandedSignatures.contains(currentSig)) {
                 items.add(PageItem.page(currentSig, i, pageLabel(pages.get(i), i),
                     pages.get(i).getPageType()));
             }
@@ -1004,7 +1023,7 @@ public final class MainController implements Initializable {
 
         pageListView.setItems(items);
         updateOverflow();
-        refreshPreviewSummary(pages, group, pps);
+        refreshPreviewSummary(pages, group, pps, bodyEnd - bodyStart);
     }
 
     private void updateOverflow() {
@@ -1023,7 +1042,7 @@ public final class MainController implements Initializable {
             return;
         }
         int pps = sigSizeSpinner.getValue() != null ? sigSizeSpinner.getValue() * 4 : 16;
-        int total = seq.pageCount();
+        int total = seq.pageCount() - state.getFrontMatterPageCount() - state.getRearMatterPageCount();
         int remainder = total % pps;
         if (remainder == 0) {
             int sigs = total / pps;
@@ -1036,15 +1055,16 @@ public final class MainController implements Initializable {
         }
     }
 
-    private void refreshPreviewSummary(List<QuirePage> pages, ImpositionGroup group, int pps) {
+    private void refreshPreviewSummary(List<QuirePage> pages, ImpositionGroup group, int pps,
+            int bodyCount) {
         long blanks = pages.stream().filter(p -> p.getPageType() != PageType.CONTENT).count();
         int sigs = group == ImpositionGroup.C
-            ? (int) Math.ceil((double) pages.size() / pps) : 1;
+            ? (int) Math.ceil((double) bodyCount / pps) : 1;
         previewSummaryLabel.setText(
             pages.size() + " pages total  ·  "
             + blanks + " blank  ·  "
             + (pages.size() - blanks) + " content  ·  "
-            + sigs + " signature(s)");
+            + sigs + " body signature(s)");
     }
 
     private String pageLabel(QuirePage page, int idx) {
@@ -1071,49 +1091,122 @@ public final class MainController implements Initializable {
         if (seq == null) {
             return;
         }
-        double thickness = parseThickness();
-        CreepConfig creepConfig = thickness > 0
-            ? CreepConfig.builder().paperThicknessMm(thickness).build()
-            : CreepConfig.builder().build();
-
         int sigSize = sigSizeSpinner.getValue() != null ? sigSizeSpinner.getValue() : 4;
+        ImpositionGroup group = BindingGroupMapper.groupFor(state.getTechnique());
 
-        // Blanks are already in the sequence from step 3 — use zero completion padding
-        QuireProject project = QuireProject.builder()
-            .name(state.getInputPdf() != null
-                ? state.getInputPdf().getFileName().toString() : "project")
-            .bindingTechnique(state.getTechnique())
-            .paperSize(state.getPaperSize())
-            .readingDirection(state.getReadingDirection())
-            .layout(ImpositionLayout.FOLIO)
-            .pageSequence(seq)
-            .paddingConfig(PaddingConfig.builder()
-                .signatureSize(sigSize)
-                .completionFront(0)
-                .completionRear(0)
-                .build())
-            .numberingConfig(NumberingConfig.builder()
-                .frontMatterStyle(state.getFrontMatterFolioStyle())
-                .bodyStyle(state.getBodyFolioStyle())
-                .rearMatterStyle(state.getRearMatterFolioStyle())
-                .frontMatterStartNumber(state.getFrontMatterStartNumber())
-                .bodyStartNumber(state.getBodyStartNumber())
-                .rearMatterStartNumber(state.getRearMatterStartNumber())
-                .suppressFirstBodyFolio(state.isSuppressFirstFolio())
-                .folioPosition(state.getFolioPosition())
-                .build())
-            .markConfig(MarkConfig.builder().build())
-            .creepConfig(creepConfig)
+        PaddingConfig paddingConfig = PaddingConfig.builder()
+            .signatureSize(sigSize)
+            .completionFront(0)
+            .completionRear(0)
             .build();
 
-        List<Signature> sigs = ImpositionEngine.impose(project);
-        state.setImpositionResult(sigs);
+        NumberingConfig numberingConfig = NumberingConfig.builder()
+            .frontMatterStyle(state.getFrontMatterFolioStyle())
+            .bodyStyle(state.getBodyFolioStyle())
+            .rearMatterStyle(state.getRearMatterFolioStyle())
+            .frontMatterStartNumber(state.getFrontMatterStartNumber())
+            .bodyStartNumber(state.getBodyStartNumber())
+            .rearMatterStartNumber(state.getRearMatterStartNumber())
+            .suppressFirstBodyFolio(state.isSuppressFirstFolio())
+            .folioPosition(state.getFolioPosition())
+            .build();
 
-        signaturesTable.setItems(FXCollections.observableArrayList(
-            sigs.stream().map(SignatureRow::from).toList()));
+        ZonedResult zonedResult = imposeWithZones(seq, group, paddingConfig, numberingConfig,
+            state.getReadingDirection());
+        state.setImpositionResult(zonedResult.allSignatures());
 
-        int totalSheets = sigs.stream().mapToInt(s -> s.getSheets().size()).sum();
-        setStatus("Imposition: " + sigs.size() + " signature(s), " + totalSheets + " sheet(s).");
+        List<SignatureRow> rows = new ArrayList<>();
+        List<Signature> all = zonedResult.allSignatures();
+        int frontEnd = zonedResult.frontSigCount();
+        int bodyEnd = frontEnd + zonedResult.bodySigCount();
+        for (int i = 0; i < all.size(); i++) {
+            String zone = i < frontEnd ? "Front Matter"
+                : i < bodyEnd ? "Body" : "Rear Matter";
+            rows.add(SignatureRow.from(all.get(i), zone));
+        }
+        signaturesTable.setItems(FXCollections.observableArrayList(rows));
+
+        int totalSheets = all.stream().mapToInt(s -> s.getSheets().size()).sum();
+        setStatus("Imposition: " + all.size() + " signature(s), " + totalSheets + " sheet(s).");
+    }
+
+    private ZonedResult imposeWithZones(
+            PageSequence seq,
+            ImpositionGroup group,
+            PaddingConfig paddingConfig,
+            NumberingConfig numberingConfig,
+            ReadingDirection direction) {
+        int frontCount = state.getFrontMatterPageCount();
+        int rearCount = state.getRearMatterPageCount();
+        int total = seq.pageCount();
+        int bodyStart = Math.min(frontCount, total);
+        int bodyEnd = Math.max(bodyStart, total - rearCount);
+
+        List<QuirePage> frontPages = new ArrayList<>(seq.getPages().subList(0, bodyStart));
+        List<QuirePage> bodyRaw = new ArrayList<>(seq.getPages().subList(bodyStart, bodyEnd));
+        List<QuirePage> rearPages = new ArrayList<>(seq.getPages().subList(bodyEnd, total));
+
+        // Apply filler-blank padding to body only; front/rear are always multiples of 4
+        List<QuirePage> bodyPadded = PagePaddingApplier.pad(bodyRaw, paddingConfig, group);
+
+        // Assign folios across the full sequence so zone detection works correctly
+        List<QuirePage> combined = new ArrayList<>(frontPages.size() + bodyPadded.size() + rearPages.size());
+        combined.addAll(frontPages);
+        combined.addAll(bodyPadded);
+        combined.addAll(rearPages);
+        List<QuirePage> numbered = FolioAssigner.assign(combined, numberingConfig);
+
+        int fSize = frontPages.size();
+        int bSize = bodyPadded.size();
+        List<QuirePage> nFront = new ArrayList<>(numbered.subList(0, fSize));
+        List<QuirePage> nBody = new ArrayList<>(numbered.subList(fSize, fSize + bSize));
+        List<QuirePage> nRear = new ArrayList<>(numbered.subList(fSize + bSize, numbered.size()));
+
+        List<Signature> all = new ArrayList<>();
+        int offset = 0;
+
+        if (!nFront.isEmpty()) {
+            for (Signature s : SignatureComposer.compose(
+                    nFront, ImpositionGroup.B, ImpositionLayout.FOLIO, 1, direction)) {
+                all.add(reindexSignature(s, offset++));
+            }
+        }
+        int frontSigCount = all.size();
+
+        int bodySigCount = 0;
+        if (!nBody.isEmpty()) {
+            for (Signature s : SignatureComposer.compose(
+                    nBody, group, ImpositionLayout.FOLIO,
+                    paddingConfig.getSignatureSize(), direction)) {
+                all.add(reindexSignature(s, offset++));
+                bodySigCount++;
+            }
+        }
+
+        if (!nRear.isEmpty()) {
+            for (Signature s : SignatureComposer.compose(
+                    nRear, ImpositionGroup.B, ImpositionLayout.FOLIO, 1, direction)) {
+                all.add(reindexSignature(s, offset++));
+            }
+        }
+
+        return new ZonedResult(List.copyOf(all), frontSigCount, bodySigCount);
+    }
+
+    private static Signature reindexSignature(Signature sig, int newIndex) {
+        List<ImposedSheet> newSheets = sig.getSheets().stream()
+            .map(sheet -> ImposedSheet.builder()
+                .sheetIndex(sheet.getSheetIndex())
+                .signatureIndex(newIndex)
+                .frontPages(sheet.getFrontPages())
+                .backPages(sheet.getBackPages())
+                .build())
+            .toList();
+        return Signature.builder()
+            .signatureIndex(newIndex)
+            .sheets(newSheets)
+            .logicalPageNumbers(sig.getLogicalPageNumbers())
+            .build();
     }
 
     @FXML
@@ -1212,7 +1305,7 @@ public final class MainController implements Initializable {
         int next = currentStep + 1;
         if (next == 2) {
             collectOptionsState();
-            collapsedSignatures.clear();
+            expandedSignatures.clear();
             applyDefaultPadding();
             rebuildPageList();
         }
@@ -1381,6 +1474,8 @@ public final class MainController implements Initializable {
 
     // ── Inner types ───────────────────────────────────────────────────────────
 
+    private record ZonedResult(List<Signature> allSignatures, int frontSigCount, int bodySigCount) {}
+
     /**
      * Represents one row in the page list.
      * {@code zone} is non-null only for zone headers ("FRONT", "REAR").
@@ -1441,9 +1536,10 @@ public final class MainController implements Initializable {
     /**
      * Flat summary row for the imposition result table on the export step.
      */
-    public record SignatureRow(int index, int pageCount, int sheetCount, String creepSummary) {
+    public record SignatureRow(int index, int pageCount, int sheetCount, String creepSummary,
+            String zone) {
 
-        static SignatureRow from(Signature sig) {
+        static SignatureRow from(Signature sig, String zone) {
             double maxCreep = sig.getSheets().stream()
                 .mapToDouble(s -> s.getCreepResult().map(r -> r.getCreepMm()).orElse(0.0))
                 .max().orElse(0.0);
@@ -1453,7 +1549,8 @@ public final class MainController implements Initializable {
                 sig.getSignatureIndex() + 1,
                 sig.getSheets().size() * 4,
                 sig.getSheets().size(),
-                creep);
+                creep,
+                zone);
         }
     }
 }

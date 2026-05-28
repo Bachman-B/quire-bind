@@ -37,7 +37,7 @@ public final class QuireBindApp extends Application {
         FXMLLoader loader = new FXMLLoader(fxml);
         BorderPane root = loader.load();
 
-        Scene scene = new Scene(root, 920, 660);
+        Scene scene = new Scene(root, 1024, 720);
         URL css = getClass().getResource(
             "/com/maiitsoh/quirebind/desktop/css/style.css");
         if (css != null) {

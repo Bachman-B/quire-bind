@@ -29,7 +29,7 @@
 
 .wizard-step {
     -fx-background-color: white;
-    -fx-padding: 24 32 24 32;
+    -fx-padding: 16 24 16 24;
 }
 
 .wizard-nav {
