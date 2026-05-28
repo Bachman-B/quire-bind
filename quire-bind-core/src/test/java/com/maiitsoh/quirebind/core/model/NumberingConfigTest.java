@@ -30,9 +30,10 @@ class NumberingConfigTest {
         assertEquals(FolioStyle.NONE, cfg.getFrontMatterStyle());
         assertEquals(FolioStyle.ARABIC, cfg.getBodyStyle());
         assertEquals(FolioStyle.NONE, cfg.getRearMatterStyle());
+        assertEquals(1, cfg.getFrontMatterStartNumber());
         assertEquals(1, cfg.getBodyStartNumber());
         assertFalse(cfg.isSuppressFirstBodyFolio());
-        assertEquals(FolioPosition.OUTER_MARGIN, cfg.getFolioPosition());
+        assertEquals(FolioPosition.BOTTOM_OUTER, cfg.getFolioPosition());
     }
 
     @Test
@@ -41,16 +42,18 @@ class NumberingConfigTest {
                 .frontMatterStyle(FolioStyle.ROMAN)
                 .bodyStyle(FolioStyle.ARABIC)
                 .rearMatterStyle(FolioStyle.NONE)
+                .frontMatterStartNumber(3)
                 .bodyStartNumber(5)
                 .suppressFirstBodyFolio(true)
-                .folioPosition(FolioPosition.INNER_MARGIN)
+                .folioPosition(FolioPosition.TOP_INNER)
                 .build();
         assertEquals(FolioStyle.ROMAN, cfg.getFrontMatterStyle());
         assertEquals(FolioStyle.ARABIC, cfg.getBodyStyle());
         assertEquals(FolioStyle.NONE, cfg.getRearMatterStyle());
+        assertEquals(3, cfg.getFrontMatterStartNumber());
         assertEquals(5, cfg.getBodyStartNumber());
         assertTrue(cfg.isSuppressFirstBodyFolio());
-        assertEquals(FolioPosition.INNER_MARGIN, cfg.getFolioPosition());
+        assertEquals(FolioPosition.TOP_INNER, cfg.getFolioPosition());
     }
 
     @Test
@@ -159,9 +162,28 @@ class NumberingConfigTest {
     }
 
     @Test
+    void frontMatterStartNumberZeroThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> NumberingConfig.builder().frontMatterStartNumber(0));
+    }
+
+    @Test
+    void frontMatterStartNumberNegativeThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> NumberingConfig.builder().frontMatterStartNumber(-1));
+    }
+
+    @Test
+    void equalsDifferentFrontMatterStartNumber() {
+        NumberingConfig a = NumberingConfig.builder().build();
+        NumberingConfig b = NumberingConfig.builder().frontMatterStartNumber(5).build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
     void equalsDifferentFolioPosition() {
         NumberingConfig a = NumberingConfig.builder().build();
-        NumberingConfig b = NumberingConfig.builder().folioPosition(FolioPosition.INNER_MARGIN).build();
+        NumberingConfig b = NumberingConfig.builder().folioPosition(FolioPosition.TOP_INNER).build();
         assertNotEquals(a, b);
     }
 

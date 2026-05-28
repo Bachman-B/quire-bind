@@ -19,22 +19,32 @@
 package com.maiitsoh.quirebind.core.model;
 
 /**
- * The horizontal position of the printed folio on the page.
+ * The printed position of the folio (page number) on the page.
  *
- * <p>Position is reading-direction aware: INNER_MARGIN is the spine side
- * and OUTER_MARGIN is the fore-edge side, regardless of LTR or RTL.
+ * <p>Position is reading-direction aware: INNER is the spine side and OUTER is the
+ * fore-edge side, regardless of LTR or RTL. The default for most books is
+ * {@link #BOTTOM_OUTER}.
  */
 public enum FolioPosition {
 
-    /**
-     * Inner margin — spine side of the page.
-     * Left on recto pages for LTR; right on recto pages for RTL.
-     */
-    INNER_MARGIN,
+    /** Top of page, spine-side edge. */
+    TOP_INNER,
+
+    /** Top of page, centred. */
+    TOP_CENTER,
+
+    /** Top of page, fore-edge side (running-head position). */
+    TOP_OUTER,
+
+    /** Bottom of page, spine-side edge. */
+    BOTTOM_INNER,
+
+    /** Bottom of page, centred. */
+    BOTTOM_CENTER,
 
     /**
-     * Outer margin — fore-edge side of the page. The most common typographic convention.
-     * Right on recto pages for LTR; left on recto pages for RTL.
+     * Bottom of page, fore-edge side. The most common typographic convention for
+     * traditional page folios.
      */
-    OUTER_MARGIN
+    BOTTOM_OUTER
 }

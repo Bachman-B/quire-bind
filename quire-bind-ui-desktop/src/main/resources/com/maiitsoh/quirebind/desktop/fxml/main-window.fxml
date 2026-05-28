@@ -177,37 +177,66 @@
                 </VBox>
 
                 <!-- ─── Step 3: Preview / edit ────────────────────────────── -->
-                <VBox fx:id="stepPreview" styleClass="wizard-step" spacing="10"
+                <VBox fx:id="stepPreview" styleClass="wizard-step" spacing="8"
                       visible="false" managed="false">
                     <Label text="Page Sequence" styleClass="step-title"/>
-                    <Label text="Review and edit pages before imposition. Signature boundaries are shown as dividers."
+                    <Label text="Review and edit pages before imposition."
                            styleClass="step-description" wrapText="true"/>
                     <Separator/>
 
-                    <!-- Editing toolbar: blank/move operations -->
+                    <!-- Matter + thumbnail bar -->
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Front matter:" styleClass="field-label"/>
+                        <Spinner fx:id="frontMatterSpinner" maxWidth="72" editable="true"/>
+                        <Label text="pages" styleClass="step-description"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="Rear matter:" styleClass="field-label"/>
+                        <Spinner fx:id="rearMatterSpinner" maxWidth="72" editable="true"/>
+                        <Label text="pages" styleClass="step-description"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <javafx.scene.control.CheckBox fx:id="thumbnailCheck"
+                                                       text="Show thumbnails"/>
+                    </HBox>
+
+                    <!-- Editing toolbars -->
                     <HBox spacing="6">
                         <Button text="+ Blank before" onAction="#handleAddBlankBefore"
                                 styleClass="action-button"/>
                         <Button text="+ Blank after"  onAction="#handleAddBlankAfter"
                                 styleClass="action-button"/>
-                        <Button text="✕ Remove"        onAction="#handleRemovePage"
+                        <Button text="✕ Remove"       onAction="#handleRemovePage"
                                 styleClass="action-button"/>
-                        <Button text="↑ Move up"       onAction="#handleMovePageUp"
+                        <Button text="↑ Move up"      onAction="#handleMovePageUp"
                                 styleClass="action-button"/>
-                        <Button text="↓ Move down"     onAction="#handleMovePageDown"
+                        <Button text="↓ Move down"    onAction="#handleMovePageDown"
                                 styleClass="action-button"/>
-                    </HBox>
-
-                    <!-- Decorative page toolbar -->
-                    <HBox spacing="6">
-                        <Button text="+ Decorative front" onAction="#handleAddDecorativeFront"
+                        <Button text="+ Deco front"   onAction="#handleAddDecorativeFront"
                                 styleClass="action-button"/>
-                        <Button text="+ Decorative rear"  onAction="#handleAddDecorativeRear"
+                        <Button text="+ Deco rear"    onAction="#handleAddDecorativeRear"
                                 styleClass="action-button"/>
                     </HBox>
 
-                    <ListView fx:id="pageListView" VBox.vgrow="ALWAYS"
-                              styleClass="page-list"/>
+                    <!-- SplitPane: page list | side panel -->
+                    <javafx.scene.control.SplitPane dividerPositions="0.62"
+                                                    VBox.vgrow="ALWAYS">
+                        <ListView fx:id="pageListView" styleClass="page-list"/>
+                        <VBox styleClass="thumbnail-panel" spacing="8" minWidth="170">
+                            <Label text="Preview" styleClass="section-label"/>
+                            <StackPane styleClass="thumbnail-container" VBox.vgrow="ALWAYS">
+                                <Label fx:id="thumbnailPlaceholder" text="Select a page"
+                                       styleClass="step-description"/>
+                                <javafx.scene.image.ImageView fx:id="thumbnailView"
+                                    fitWidth="180" preserveRatio="true"
+                                    visible="false" managed="false"/>
+                            </StackPane>
+                            <Separator/>
+                            <Label text="Page label:" styleClass="field-label"/>
+                            <TextField fx:id="pageLabelField" promptText="e.g. Title page"/>
+                            <Button text="Set label" onAction="#handleSetPageLabel"
+                                    styleClass="action-button" maxWidth="Infinity"/>
+                        </VBox>
+                    </javafx.scene.control.SplitPane>
+
                     <Label fx:id="overflowLabel" styleClass="overflow-label" wrapText="true"/>
                     <Label fx:id="previewSummaryLabel" styleClass="summary-label"/>
                 </VBox>
@@ -236,35 +265,55 @@
                                 <CheckBox fx:id="trimLinesCheck"   text="Trim lines"/>
                                 <Separator/>
                                 <Label text="Page Numbering" styleClass="section-label"/>
-                                <GridPane hgap="8" vgap="6">
+                                <GridPane hgap="6" vgap="5">
                                     <columnConstraints>
-                                        <ColumnConstraints minWidth="110" maxWidth="130"/>
+                                        <ColumnConstraints minWidth="90" maxWidth="110"/>
                                         <ColumnConstraints hgrow="ALWAYS"/>
+                                        <ColumnConstraints minWidth="64" maxWidth="72"/>
                                     </columnConstraints>
-                                    <Label text="Body style:"
-                                           GridPane.rowIndex="0" GridPane.columnIndex="0"
+                                    <!-- Header row -->
+                                    <Label text=""
+                                           GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                    <Label text="Style"
+                                           GridPane.rowIndex="0" GridPane.columnIndex="1"
                                            styleClass="field-label"/>
-                                    <ComboBox fx:id="bodyFolioStyleCombo"
-                                              GridPane.rowIndex="0" GridPane.columnIndex="1"
-                                              maxWidth="Infinity"/>
+                                    <Label text="Start №"
+                                           GridPane.rowIndex="0" GridPane.columnIndex="2"
+                                           styleClass="field-label"/>
+                                    <!-- Front matter -->
                                     <Label text="Front matter:"
                                            GridPane.rowIndex="1" GridPane.columnIndex="0"
                                            styleClass="field-label"/>
                                     <ComboBox fx:id="frontMatterFolioStyleCombo"
                                               GridPane.rowIndex="1" GridPane.columnIndex="1"
                                               maxWidth="Infinity"/>
-                                    <Label text="Start number:"
+                                    <Spinner fx:id="frontStartNumberSpinner"
+                                             GridPane.rowIndex="1" GridPane.columnIndex="2"
+                                             maxWidth="64"/>
+                                    <!-- Body -->
+                                    <Label text="Body:"
                                            GridPane.rowIndex="2" GridPane.columnIndex="0"
                                            styleClass="field-label"/>
+                                    <ComboBox fx:id="bodyFolioStyleCombo"
+                                              GridPane.rowIndex="2" GridPane.columnIndex="1"
+                                              maxWidth="Infinity"/>
                                     <Spinner fx:id="startNumberSpinner"
-                                             GridPane.rowIndex="2" GridPane.columnIndex="1"
-                                             maxWidth="80"/>
-                                    <Label text="Position:"
+                                             GridPane.rowIndex="2" GridPane.columnIndex="2"
+                                             maxWidth="64"/>
+                                    <!-- Rear matter -->
+                                    <Label text="Rear matter:"
                                            GridPane.rowIndex="3" GridPane.columnIndex="0"
                                            styleClass="field-label"/>
-                                    <ComboBox fx:id="folioPositionCombo"
+                                    <ComboBox fx:id="rearMatterFolioStyleCombo"
                                               GridPane.rowIndex="3" GridPane.columnIndex="1"
                                               maxWidth="Infinity"/>
+                                    <!-- Position -->
+                                    <Label text="Position:"
+                                           GridPane.rowIndex="4" GridPane.columnIndex="0"
+                                           styleClass="field-label"/>
+                                    <ComboBox fx:id="folioPositionCombo"
+                                              GridPane.rowIndex="4" GridPane.columnIndex="1"
+                                              GridPane.columnSpan="2" maxWidth="Infinity"/>
                                 </GridPane>
                                 <CheckBox fx:id="suppressFirstFolioCheck"
                                           text="Suppress folio on first page"/>

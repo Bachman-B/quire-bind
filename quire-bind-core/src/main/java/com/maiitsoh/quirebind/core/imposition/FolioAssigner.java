@@ -73,7 +73,7 @@ public final class FolioAssigner {
         }
 
         List<QuirePage> result = new ArrayList<>(pages.size());
-        int frontCounter = 1;
+        int frontCounter = config.getFrontMatterStartNumber();
         int bodyCounter = config.getBodyStartNumber();
         int rearCounter = 1;
         boolean firstBody = true;

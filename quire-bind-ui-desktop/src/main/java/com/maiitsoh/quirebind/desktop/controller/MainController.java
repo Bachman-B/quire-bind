@@ -25,6 +25,9 @@ import com.maiitsoh.quirebind.core.model.BindingTechnique;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.FolioStyle;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import com.maiitsoh.quirebind.core.model.ImpositionGroup;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
@@ -48,6 +51,9 @@ import com.maiitsoh.quirebind.desktop.template.QuireTemplateWriter;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -57,6 +63,9 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -78,16 +87,22 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Consumer;
+import javax.imageio.ImageIO;
 
 /** Controls the four-step imposition wizard in the main window. */
 public final class MainController implements Initializable {
@@ -131,6 +146,12 @@ public final class MainController implements Initializable {
     @FXML private ListView<PageItem> pageListView;
     @FXML private Label previewSummaryLabel;
     @FXML private Label overflowLabel;
+    @FXML private Spinner<Integer> frontMatterSpinner;
+    @FXML private Spinner<Integer> rearMatterSpinner;
+    @FXML private javafx.scene.control.CheckBox thumbnailCheck;
+    @FXML private ImageView thumbnailView;
+    @FXML private Label thumbnailPlaceholder;
+    @FXML private TextField pageLabelField;
 
     // ── Step 4: Export ───────────────────────────────────────────────────────
     @FXML private CheckBox foldLinesCheck;
@@ -139,6 +160,8 @@ public final class MainController implements Initializable {
     @FXML private CheckBox trimLinesCheck;
     @FXML private ComboBox<FolioStyle> bodyFolioStyleCombo;
     @FXML private ComboBox<FolioStyle> frontMatterFolioStyleCombo;
+    @FXML private ComboBox<FolioStyle> rearMatterFolioStyleCombo;
+    @FXML private Spinner<Integer> frontStartNumberSpinner;
     @FXML private Spinner<Integer> startNumberSpinner;
     @FXML private ComboBox<FolioPosition> folioPositionCombo;
     @FXML private CheckBox suppressFirstFolioCheck;
@@ -157,6 +180,10 @@ public final class MainController implements Initializable {
     private ToggleGroup modeToggleGroup;
     private ToggleGroup paddingToggleGroup;
     private final Set<Integer> collapsedSignatures = new HashSet<>();
+    private final Set<String> collapsedZones = new HashSet<>();
+    private final Map<Integer, Image> thumbnailCache = new HashMap<>();
+    private final Map<Integer, String> pageLabels = new HashMap<>();
+    private Task<Map<Integer, Image>> activeThumbnailTask;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -195,16 +222,41 @@ public final class MainController implements Initializable {
         directionCombo.setItems(FXCollections.observableArrayList(ReadingDirection.values()));
         directionCombo.setValue(ReadingDirection.LTR);
 
+        // Front/rear matter spinners (step 3, step by 4)
+        frontMatterSpinner.setValueFactory(
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 20, 0, 4));
+        frontMatterSpinner.valueProperty().addListener((obs, o, n) -> {
+            if (n != null) {
+                onFrontMatterChanged(n);
+            }
+        });
+        rearMatterSpinner.setValueFactory(
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 20, 0, 4));
+        rearMatterSpinner.valueProperty().addListener((obs, o, n) -> {
+            if (n != null) {
+                onRearMatterChanged(n);
+            }
+        });
+        thumbnailCheck.selectedProperty().addListener(
+            (obs, o, n) -> onThumbnailToggle(n));
+        pageListView.getSelectionModel().selectedItemProperty().addListener(
+            (obs, o, n) -> updateSidePanel(n));
+
         // Numbering controls (step 4)
         bodyFolioStyleCombo.setItems(FXCollections.observableArrayList(FolioStyle.values()));
         bodyFolioStyleCombo.setValue(FolioStyle.ARABIC);
         frontMatterFolioStyleCombo.setItems(FXCollections.observableArrayList(FolioStyle.values()));
         frontMatterFolioStyleCombo.setValue(FolioStyle.NONE);
+        rearMatterFolioStyleCombo.setItems(FXCollections.observableArrayList(FolioStyle.values()));
+        rearMatterFolioStyleCombo.setValue(FolioStyle.NONE);
+        frontStartNumberSpinner.setValueFactory(
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 9999, 1));
+        frontStartNumberSpinner.setEditable(true);
         startNumberSpinner.setValueFactory(
             new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 9999, 1));
         startNumberSpinner.setEditable(true);
         folioPositionCombo.setItems(FXCollections.observableArrayList(FolioPosition.values()));
-        folioPositionCombo.setValue(FolioPosition.OUTER_MARGIN);
+        folioPositionCombo.setValue(FolioPosition.BOTTOM_OUTER);
 
         // Page list with collapsable signature headers
         pageListView.setCellFactory(lv -> new PageListCell(this::toggleSignatureCollapse));
@@ -235,10 +287,19 @@ public final class MainController implements Initializable {
         outputPathField.clear();
         exportResultLabel.setText("");
         pageListView.getItems().clear();
+        frontMatterSpinner.getValueFactory().setValue(0);
+        rearMatterSpinner.getValueFactory().setValue(0);
+        thumbnailCheck.setSelected(false);
+        thumbnailCache.clear();
+        pageLabels.clear();
+        collapsedZones.clear();
+        pageLabelField.setText("");
         bodyFolioStyleCombo.setValue(FolioStyle.ARABIC);
         frontMatterFolioStyleCombo.setValue(FolioStyle.NONE);
+        rearMatterFolioStyleCombo.setValue(FolioStyle.NONE);
+        frontStartNumberSpinner.getValueFactory().setValue(1);
         startNumberSpinner.getValueFactory().setValue(1);
-        folioPositionCombo.setValue(FolioPosition.OUTER_MARGIN);
+        folioPositionCombo.setValue(FolioPosition.BOTTOM_OUTER);
         suppressFirstFolioCheck.setSelected(false);
         showStep(0);
         setStatus("New project.");
@@ -412,6 +473,22 @@ public final class MainController implements Initializable {
             }
         }
         clean.reindex();
+    }
+
+    @FXML
+    private void handleSetPageLabel() {
+        PageItem item = pageListView.getSelectionModel().getSelectedItem();
+        if (item == null || item.isHeader()) {
+            return;
+        }
+        String label = pageLabelField.getText().trim();
+        if (label.isEmpty()) {
+            pageLabels.remove(item.seqIndex());
+        } else {
+            pageLabels.put(item.seqIndex(), label);
+        }
+        rebuildPageList();
+        reselectBySeqIndex(item.seqIndex());
     }
 
     @FXML
@@ -601,6 +678,196 @@ public final class MainController implements Initializable {
         rebuildPageList();
     }
 
+    private void toggleZoneCollapse(String zone) {
+        if (collapsedZones.contains(zone)) {
+            collapsedZones.remove(zone);
+        } else {
+            collapsedZones.add(zone);
+        }
+        rebuildPageList();
+    }
+
+    private void onFrontMatterChanged(int newCount) {
+        state.setFrontMatterPageCount(newCount);
+        syncLeadingAesthetic(newCount);
+        rebuildPageList();
+    }
+
+    private void onRearMatterChanged(int newCount) {
+        state.setRearMatterPageCount(newCount);
+        syncTrailingAesthetic(newCount);
+        rebuildPageList();
+    }
+
+    private void syncLeadingAesthetic(int target) {
+        PageSequence seq = state.getPageSequence();
+        if (seq == null) {
+            return;
+        }
+        int current = 0;
+        for (QuirePage p : seq.getPages()) {
+            if (p.getPageType() == PageType.AESTHETIC) {
+                current++;
+            } else {
+                break;
+            }
+        }
+        int diff = target - current;
+        if (diff > 0) {
+            for (int i = 0; i < diff; i++) {
+                seq.insertPage(0, QuirePage.builder()
+                    .physicalPosition(0).pageType(PageType.AESTHETIC).build());
+            }
+        } else {
+            for (int i = 0; i < -diff; i++) {
+                if (!seq.getPages().isEmpty()
+                        && seq.getPages().get(0).getPageType() == PageType.AESTHETIC) {
+                    seq.removePage(0);
+                }
+            }
+        }
+        seq.reindex();
+    }
+
+    private void syncTrailingAesthetic(int target) {
+        PageSequence seq = state.getPageSequence();
+        if (seq == null) {
+            return;
+        }
+        List<QuirePage> pages = seq.getPages();
+        int current = 0;
+        for (int i = pages.size() - 1; i >= 0; i--) {
+            if (pages.get(i).getPageType() == PageType.AESTHETIC) {
+                current++;
+            } else {
+                break;
+            }
+        }
+        int diff = target - current;
+        if (diff > 0) {
+            for (int i = 0; i < diff; i++) {
+                seq.insertPage(seq.pageCount(), QuirePage.builder()
+                    .physicalPosition(0).pageType(PageType.AESTHETIC).build());
+            }
+        } else {
+            for (int i = 0; i < -diff; i++) {
+                int last = seq.pageCount() - 1;
+                if (last >= 0 && seq.getPages().get(last).getPageType() == PageType.AESTHETIC) {
+                    seq.removePage(last);
+                }
+            }
+        }
+        seq.reindex();
+    }
+
+    private void updateSidePanel(PageItem item) {
+        if (item == null || item.isHeader()) {
+            thumbnailView.setVisible(false);
+            thumbnailView.setManaged(false);
+            thumbnailPlaceholder.setText("Select a page");
+            thumbnailPlaceholder.setVisible(true);
+            thumbnailPlaceholder.setManaged(true);
+            pageLabelField.setText("");
+            return;
+        }
+        thumbnailPlaceholder.setVisible(false);
+        thumbnailPlaceholder.setManaged(false);
+        Image img = thumbnailCache.get(item.seqIndex());
+        if (img != null) {
+            thumbnailView.setImage(img);
+            thumbnailView.setVisible(true);
+            thumbnailView.setManaged(true);
+        } else {
+            thumbnailView.setVisible(false);
+            thumbnailView.setManaged(false);
+            thumbnailPlaceholder.setText("No thumbnail — enable above");
+            thumbnailPlaceholder.setVisible(true);
+            thumbnailPlaceholder.setManaged(true);
+        }
+        String label = pageLabels.getOrDefault(item.seqIndex(), "");
+        pageLabelField.setText(label);
+    }
+
+    private void onThumbnailToggle(boolean enabled) {
+        if (!enabled) {
+            if (activeThumbnailTask != null) {
+                activeThumbnailTask.cancel();
+                activeThumbnailTask = null;
+            }
+            thumbnailCache.clear();
+            rebuildPageList();
+            updateSidePanel(pageListView.getSelectionModel().getSelectedItem());
+            return;
+        }
+        Path pdf = state.getInputPdf();
+        PageSequence seq = state.getPageSequence();
+        if (pdf == null || seq == null) {
+            thumbnailCheck.setSelected(false);
+            return;
+        }
+        startThumbnailLoading(pdf, seq.pageCount());
+    }
+
+    private void startThumbnailLoading(Path pdf, int pageCount) {
+        Task<Map<Integer, Image>> task = new Task<>() {
+            @Override
+            protected Map<Integer, Image> call() throws Exception {
+                Map<Integer, Image> cache = new HashMap<>();
+                try (PDDocument doc = Loader.loadPDF(pdf.toFile())) {
+                    PDFRenderer renderer = new PDFRenderer(doc);
+                    for (int i = 0; i < pageCount && !isCancelled(); i++) {
+                        updateProgress(i, pageCount);
+                        updateMessage("Page " + (i + 1) + " / " + pageCount);
+                        BufferedImage bi = renderer.renderImageWithDPI(i, 72);
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ImageIO.write(bi, "png", baos);
+                        cache.put(i, new Image(new ByteArrayInputStream(baos.toByteArray())));
+                    }
+                }
+                return cache;
+            }
+        };
+        activeThumbnailTask = task;
+
+        Stage progressStage = new Stage();
+        progressStage.initModality(Modality.APPLICATION_MODAL);
+        progressStage.setTitle("Loading thumbnails…");
+        ProgressBar pb = new ProgressBar();
+        pb.progressProperty().bind(task.progressProperty());
+        pb.setPrefWidth(280);
+        Label msg = new Label("Preparing…");
+        msg.textProperty().bind(task.messageProperty());
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setOnAction(e -> {
+            task.cancel();
+            progressStage.close();
+            thumbnailCheck.setSelected(false);
+        });
+        javafx.scene.layout.VBox box = new javafx.scene.layout.VBox(10, msg, pb, cancelBtn);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(20));
+        progressStage.setScene(new javafx.scene.Scene(box));
+
+        task.setOnSucceeded(e -> {
+            thumbnailCache.putAll(task.getValue());
+            progressStage.close();
+            rebuildPageList();
+            updateSidePanel(pageListView.getSelectionModel().getSelectedItem());
+        });
+        task.setOnFailed(e -> {
+            progressStage.close();
+            thumbnailCheck.setSelected(false);
+            showError("Thumbnail loading failed",
+                task.getException() != null ? task.getException().getMessage() : "Unknown error");
+        });
+        task.setOnCancelled(e -> progressStage.close());
+
+        progressStage.show();
+        Thread t = new Thread(task, "thumbnail-loader");
+        t.setDaemon(true);
+        t.start();
+    }
+
     /**
      * Rebuilds the page list, inserting expandable/collapsable signature-boundary headers
      * and pre-computing overflow/underflow for the current signature settings.
@@ -615,22 +882,47 @@ public final class MainController implements Initializable {
         }
 
         List<QuirePage> pages = seq.getPages();
+        int total = pages.size();
+        int frontCount = state.getFrontMatterPageCount();
+        int rearCount = state.getRearMatterPageCount();
+        int bodyStart = Math.min(frontCount, total);
+        int bodyEnd = Math.max(bodyStart, total - rearCount);
+
         ImpositionGroup group = BindingGroupMapper.groupFor(
             techniqueCombo.getValue() != null
                 ? techniqueCombo.getValue() : BindingTechnique.SADDLE_STITCH);
         int pps = (group == ImpositionGroup.C && sigSizeSpinner.getValue() != null)
-            ? sigSizeSpinner.getValue() * 4 : pages.size();
+            ? sigSizeSpinner.getValue() * 4 : Math.max(1, bodyEnd - bodyStart);
 
         ObservableList<PageItem> items = FXCollections.observableArrayList();
+
+        // Front matter zone
+        if (frontCount > 0) {
+            boolean collapsed = collapsedZones.contains("FRONT");
+            String arrow = collapsed ? "▶" : "▼";
+            int sheets = frontCount / 4;
+            items.add(PageItem.zoneHeader("FRONT",
+                arrow + " Front Matter  (" + frontCount + " pages · " + sheets + " sheet)"));
+            if (!collapsed) {
+                for (int i = 0; i < Math.min(frontCount, total); i++) {
+                    items.add(PageItem.page(0, i, pageLabel(pages.get(i), i),
+                        pages.get(i).getPageType()));
+                }
+            }
+        }
+
+        // Body signatures
         int currentSig = 0;
-        for (int i = 0; i < pages.size(); i++) {
-            boolean isSigStart = (group == ImpositionGroup.C && i % pps == 0) || i == 0;
+        for (int i = bodyStart; i < bodyEnd; i++) {
+            int relPos = i - bodyStart;
+            boolean isSigStart = (group == ImpositionGroup.C && relPos % pps == 0)
+                || (relPos == 0);
             if (isSigStart) {
                 currentSig++;
                 boolean collapsed = collapsedSignatures.contains(currentSig);
                 String arrow = collapsed ? "▶" : "▼";
-                int sigPageCount = Math.min(pps, pages.size() - i);
-                String overflow = sigPageCount < pps
+                int sigPageCount = Math.min(pps, bodyEnd - i);
+                String overflow = (group == ImpositionGroup.C && sigPageCount < pps)
                     ? "  ⚠ " + (pps - sigPageCount) + " short" : "";
                 items.add(PageItem.header(currentSig,
                     arrow + " Signature " + currentSig
@@ -641,8 +933,23 @@ public final class MainController implements Initializable {
                     pages.get(i).getPageType()));
             }
         }
-        pageListView.setItems(items);
 
+        // Rear matter zone
+        if (rearCount > 0 && bodyEnd <= total) {
+            boolean collapsed = collapsedZones.contains("REAR");
+            String arrow = collapsed ? "▶" : "▼";
+            int sheets = rearCount / 4;
+            items.add(PageItem.zoneHeader("REAR",
+                arrow + " Rear Matter  (" + rearCount + " pages · " + sheets + " sheet)"));
+            if (!collapsed) {
+                for (int i = bodyEnd; i < total; i++) {
+                    items.add(PageItem.page(0, i, pageLabel(pages.get(i), i),
+                        pages.get(i).getPageType()));
+                }
+            }
+        }
+
+        pageListView.setItems(items);
         updateOverflow();
         refreshPreviewSummary(pages, group, pps);
     }
@@ -687,15 +994,19 @@ public final class MainController implements Initializable {
             + sigs + " signature(s)");
     }
 
-    private static String pageLabel(QuirePage page, int idx) {
+    private String pageLabel(QuirePage page, int idx) {
+        String custom = pageLabels.get(idx);
+        if (custom != null && !custom.isBlank()) {
+            return "  " + (idx + 1) + ".  " + custom;
+        }
         String type = switch (page.getPageType()) {
             case CONTENT -> "Content";
-            case AESTHETIC -> "Decorative blank";
+            case AESTHETIC -> "Decorative";
             case COMPLETION_BLANK -> "Completion blank";
             case FILLER_BLANK -> "Filler blank";
         };
         String logical = page.getLogicalPageNumber()
-            .map(n -> "  (p." + n + ")")
+            .map(n -> "  p." + n)
             .orElse("");
         return "  " + (idx + 1) + ".  " + type + logical;
     }
@@ -729,8 +1040,10 @@ public final class MainController implements Initializable {
                 .completionRear(0)
                 .build())
             .numberingConfig(NumberingConfig.builder()
-                .bodyStyle(state.getBodyFolioStyle())
                 .frontMatterStyle(state.getFrontMatterFolioStyle())
+                .bodyStyle(state.getBodyFolioStyle())
+                .rearMatterStyle(state.getRearMatterFolioStyle())
+                .frontMatterStartNumber(state.getFrontMatterStartNumber())
                 .bodyStartNumber(state.getBodyStartNumber())
                 .suppressFirstBodyFolio(state.isSuppressFirstFolio())
                 .folioPosition(state.getFolioPosition())
@@ -816,25 +1129,33 @@ public final class MainController implements Initializable {
 
     @FXML
     private void handleNext() {
+        if (currentStep >= TOTAL_STEPS - 1) {
+            handleMenuNewProject();
+            return;
+        }
         if (!validateCurrentStep()) {
             return;
         }
-        if (currentStep < TOTAL_STEPS - 1) {
-            int next = currentStep + 1;
-            if (next == 2) {
-                collectOptionsState();
-                collapsedSignatures.clear();
-                applyDefaultPadding();
-                rebuildPageList();
-            }
-            if (next == 3) {
-                collectOptionsState();
-                exportButton.setDisable(false);
-                exportResultLabel.setText("");
-                runImpositionAndPopulateTable();
-            }
-            showStep(next);
+        int next = currentStep + 1;
+        if (next == 2) {
+            collectOptionsState();
+            collapsedSignatures.clear();
+            applyDefaultPadding();
+            rebuildPageList();
         }
+        if (next == 3) {
+            collectOptionsState();
+            exportResultLabel.setText("");
+            try {
+                runImpositionAndPopulateTable();
+            } catch (RuntimeException ex) {
+                System.err.println("[QuireBind] Imposition error: " + ex.getMessage());
+                ex.printStackTrace(System.err);
+                showError("Imposition failed", ex.getMessage());
+            }
+            exportButton.setDisable(false);
+        }
+        showStep(next);
     }
 
     private boolean validateCurrentStep() {
@@ -893,6 +1214,12 @@ public final class MainController implements Initializable {
         if (frontMatterFolioStyleCombo.getValue() != null) {
             state.setFrontMatterFolioStyle(frontMatterFolioStyleCombo.getValue());
         }
+        if (rearMatterFolioStyleCombo.getValue() != null) {
+            state.setRearMatterFolioStyle(rearMatterFolioStyleCombo.getValue());
+        }
+        if (frontStartNumberSpinner.getValue() != null) {
+            state.setFrontMatterStartNumber(frontStartNumberSpinner.getValue());
+        }
         if (startNumberSpinner.getValue() != null) {
             state.setBodyStartNumber(startNumberSpinner.getValue());
         }
@@ -911,8 +1238,8 @@ public final class MainController implements Initializable {
         stepIndicatorLabel.setText("Step " + (step + 1) + " of " + TOTAL_STEPS);
         backButton.setDisable(step == 0);
         boolean isLast = step == TOTAL_STEPS - 1;
-        nextButton.setText(isLast ? "Finish" : "Next →");
-        nextButton.setDisable(isLast);
+        nextButton.setText(isLast ? "↺ New Project" : "Next →");
+        nextButton.setDisable(false);
     }
 
     // ── Guides panel ──────────────────────────────────────────────────────────
@@ -979,52 +1306,58 @@ public final class MainController implements Initializable {
     // ── Inner types ───────────────────────────────────────────────────────────
 
     /**
-     * Represents one row in the page list — either a content/blank page or a collapsable
-     * signature boundary header. {@code sigNum} is 1-based for all row types.
+     * Represents one row in the page list.
+     * {@code zone} is non-null only for zone headers ("FRONT", "REAR").
      */
-    public record PageItem(boolean isHeader, int sigNum, int seqIndex,
-                           String label, PageType pageType) {
+    public record PageItem(boolean isHeader, boolean isZoneHeader, String zone,
+                           int sigNum, int seqIndex, String label, PageType pageType) {
+
+        /** Creates a front/rear matter zone header row. */
+        static PageItem zoneHeader(String zone, String label) {
+            return new PageItem(true, true, zone, 0, -1, label, null);
+        }
 
         /** Creates a signature boundary header row. */
         static PageItem header(int sigNum, String label) {
-            return new PageItem(true, sigNum, -1, label, null);
+            return new PageItem(true, false, null, sigNum, -1, label, null);
         }
 
         /** Creates a page row. */
         static PageItem page(int sigNum, int seqIndex, String label, PageType pageType) {
-            return new PageItem(false, sigNum, seqIndex, label, pageType);
+            return new PageItem(false, false, null, sigNum, seqIndex, label, pageType);
         }
     }
 
-    /** Cell that styles headers and blank pages distinctly, and toggles collapse on click. */
-    private static final class PageListCell extends ListCell<PageItem> {
+    /** Cell that styles headers and page rows distinctly, and toggles collapse on click. */
+    private final class PageListCell extends ListCell<PageItem> {
 
-        private final Consumer<Integer> onToggle;
+        private final Consumer<Integer> onSigToggle;
 
-        PageListCell(Consumer<Integer> onToggle) {
-            this.onToggle = onToggle;
+        PageListCell(Consumer<Integer> onSigToggle) {
+            this.onSigToggle = onSigToggle;
         }
 
         @Override
         protected void updateItem(PageItem item, boolean empty) {
             super.updateItem(item, empty);
             getStyleClass().removeAll("sig-header-cell", "blank-page-cell",
-                "content-page-cell", "overflow-sig-cell");
+                "content-page-cell", "overflow-sig-cell", "zone-header-cell");
             setOnMouseClicked(null);
             if (empty || item == null) {
                 setText(null);
-                setDisable(false);
+            } else if (item.isZoneHeader()) {
+                setText(item.label());
+                getStyleClass().add("zone-header-cell");
+                setOnMouseClicked(e -> toggleZoneCollapse(item.zone()));
             } else if (item.isHeader()) {
                 setText(item.label());
                 getStyleClass().add(item.label().contains("⚠")
                     ? "overflow-sig-cell" : "sig-header-cell");
-                setDisable(false);
-                setOnMouseClicked(e -> onToggle.accept(item.sigNum()));
+                setOnMouseClicked(e -> onSigToggle.accept(item.sigNum()));
             } else {
                 setText(item.label());
                 boolean isBlank = item.pageType() != PageType.CONTENT;
                 getStyleClass().add(isBlank ? "blank-page-cell" : "content-page-cell");
-                setDisable(false);
             }
         }
     }

@@ -70,12 +70,18 @@ public final class WizardState {
     private boolean sewingHoles = false;
     private boolean trimLines = false;
 
+    // Front/rear matter page counts (always multiples of 4; 0 = none)
+    private int frontMatterPageCount = 0;
+    private int rearMatterPageCount = 0;
+
     // Page numbering
     private FolioStyle bodyFolioStyle = FolioStyle.ARABIC;
     private FolioStyle frontMatterFolioStyle = FolioStyle.NONE;
+    private FolioStyle rearMatterFolioStyle = FolioStyle.NONE;
+    private int frontMatterStartNumber = 1;
     private int bodyStartNumber = 1;
     private boolean suppressFirstFolio = false;
-    private FolioPosition folioPosition = FolioPosition.OUTER_MARGIN;
+    private FolioPosition folioPosition = FolioPosition.BOTTOM_OUTER;
 
     // Imposition result
     private List<Signature> impositionResult;
@@ -243,6 +249,26 @@ public final class WizardState {
         this.trimLines = trimLines;
     }
 
+    /** Returns the number of front matter pages (always a multiple of 4). */
+    public int getFrontMatterPageCount() {
+        return frontMatterPageCount;
+    }
+
+    /** Sets the number of front matter pages. */
+    public void setFrontMatterPageCount(int frontMatterPageCount) {
+        this.frontMatterPageCount = frontMatterPageCount;
+    }
+
+    /** Returns the number of rear matter pages (always a multiple of 4). */
+    public int getRearMatterPageCount() {
+        return rearMatterPageCount;
+    }
+
+    /** Sets the number of rear matter pages. */
+    public void setRearMatterPageCount(int rearMatterPageCount) {
+        this.rearMatterPageCount = rearMatterPageCount;
+    }
+
     /** Returns the folio style for body (content) pages. */
     public FolioStyle getBodyFolioStyle() {
         return bodyFolioStyle;
@@ -261,6 +287,26 @@ public final class WizardState {
     /** Sets the folio style for front matter pages. */
     public void setFrontMatterFolioStyle(FolioStyle frontMatterFolioStyle) {
         this.frontMatterFolioStyle = frontMatterFolioStyle;
+    }
+
+    /** Returns the folio style for rear matter pages. */
+    public FolioStyle getRearMatterFolioStyle() {
+        return rearMatterFolioStyle;
+    }
+
+    /** Sets the folio style for rear matter pages. */
+    public void setRearMatterFolioStyle(FolioStyle rearMatterFolioStyle) {
+        this.rearMatterFolioStyle = rearMatterFolioStyle;
+    }
+
+    /** Returns the start number for the first front matter page. */
+    public int getFrontMatterStartNumber() {
+        return frontMatterStartNumber;
+    }
+
+    /** Sets the start number for front matter pages. */
+    public void setFrontMatterStartNumber(int frontMatterStartNumber) {
+        this.frontMatterStartNumber = frontMatterStartNumber;
     }
 
     /** Returns the start number assigned to the first body page. */
@@ -346,11 +392,15 @@ public final class WizardState {
         stitchMarks = false;
         sewingHoles = false;
         trimLines = false;
+        frontMatterPageCount = 0;
+        rearMatterPageCount = 0;
         bodyFolioStyle = FolioStyle.ARABIC;
         frontMatterFolioStyle = FolioStyle.NONE;
+        rearMatterFolioStyle = FolioStyle.NONE;
+        frontMatterStartNumber = 1;
         bodyStartNumber = 1;
         suppressFirstFolio = false;
-        folioPosition = FolioPosition.OUTER_MARGIN;
+        folioPosition = FolioPosition.BOTTOM_OUTER;
         impositionResult = null;
         outputPdf = null;
     }

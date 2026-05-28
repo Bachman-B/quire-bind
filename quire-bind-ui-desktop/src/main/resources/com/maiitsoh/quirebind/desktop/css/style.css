@@ -185,6 +185,13 @@
     -fx-font-size: 11px;
 }
 
+.zone-header-cell {
+    -fx-background-color: #2a4a6a;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+}
+
 .overflow-sig-cell {
     -fx-background-color: #fff3e0;
     -fx-font-weight: bold;
@@ -205,6 +212,21 @@
 
 .content-page-cell {
     -fx-text-fill: #1a1a1a;
+}
+
+/* ── Thumbnail side panel ───────────────────────────────────────────────── */
+
+.thumbnail-panel {
+    -fx-background-color: #fafafa;
+    -fx-padding: 8 10 8 10;
+}
+
+.thumbnail-container {
+    -fx-background-color: #ebebeb;
+    -fx-border-color: #d0d0d0;
+    -fx-border-width: 1;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
 }
 
 /* ── Section labels ─────────────────────────────────────────────────────── */

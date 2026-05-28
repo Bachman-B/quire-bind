@@ -32,6 +32,7 @@ public final class NumberingConfig {
     private final FolioStyle frontMatterStyle;
     private final FolioStyle bodyStyle;
     private final FolioStyle rearMatterStyle;
+    private final int frontMatterStartNumber;
     private final int bodyStartNumber;
     private final boolean suppressFirstBodyFolio;
     private final FolioPosition folioPosition;
@@ -40,6 +41,7 @@ public final class NumberingConfig {
         this.frontMatterStyle = builder.frontMatterStyle;
         this.bodyStyle = builder.bodyStyle;
         this.rearMatterStyle = builder.rearMatterStyle;
+        this.frontMatterStartNumber = builder.frontMatterStartNumber;
         this.bodyStartNumber = builder.bodyStartNumber;
         this.suppressFirstBodyFolio = builder.suppressFirstBodyFolio;
         this.folioPosition = builder.folioPosition;
@@ -58,6 +60,11 @@ public final class NumberingConfig {
     /** Returns the folio style for rear matter pages. Always {@link FolioStyle#NONE} in Phase 1. */
     public FolioStyle getRearMatterStyle() {
         return rearMatterStyle;
+    }
+
+    /** Returns the number assigned to the first front matter page. */
+    public int getFrontMatterStartNumber() {
+        return frontMatterStartNumber;
     }
 
     /** Returns the number assigned to the first body page. */
@@ -88,6 +95,7 @@ public final class NumberingConfig {
                 .frontMatterStyle(this.frontMatterStyle)
                 .bodyStyle(this.bodyStyle)
                 .rearMatterStyle(this.rearMatterStyle)
+                .frontMatterStartNumber(this.frontMatterStartNumber)
                 .bodyStartNumber(this.bodyStartNumber)
                 .suppressFirstBodyFolio(this.suppressFirstBodyFolio)
                 .folioPosition(this.folioPosition);
@@ -104,9 +112,10 @@ public final class NumberingConfig {
         private FolioStyle frontMatterStyle = FolioStyle.NONE;
         private FolioStyle bodyStyle = FolioStyle.ARABIC;
         private FolioStyle rearMatterStyle = FolioStyle.NONE;
+        private int frontMatterStartNumber = 1;
         private int bodyStartNumber = 1;
         private boolean suppressFirstBodyFolio = false;
-        private FolioPosition folioPosition = FolioPosition.OUTER_MARGIN;
+        private FolioPosition folioPosition = FolioPosition.BOTTOM_OUTER;
 
         private Builder() {
         }
@@ -141,6 +150,21 @@ public final class NumberingConfig {
          */
         public Builder rearMatterStyle(FolioStyle rearMatterStyle) {
             this.rearMatterStyle = Objects.requireNonNull(rearMatterStyle, "rearMatterStyle");
+            return this;
+        }
+
+        /**
+         * Sets the first front matter page number.
+         *
+         * @param frontMatterStartNumber must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if not positive
+         */
+        public Builder frontMatterStartNumber(int frontMatterStartNumber) {
+            if (frontMatterStartNumber < 1) {
+                throw new IllegalArgumentException("frontMatterStartNumber must be >= 1");
+            }
+            this.frontMatterStartNumber = frontMatterStartNumber;
             return this;
         }
 
@@ -195,7 +219,8 @@ public final class NumberingConfig {
         if (!(obj instanceof NumberingConfig other)) {
             return false;
         }
-        return bodyStartNumber == other.bodyStartNumber
+        return frontMatterStartNumber == other.frontMatterStartNumber
+                && bodyStartNumber == other.bodyStartNumber
                 && suppressFirstBodyFolio == other.suppressFirstBodyFolio
                 && frontMatterStyle == other.frontMatterStyle
                 && bodyStyle == other.bodyStyle
@@ -206,7 +231,7 @@ public final class NumberingConfig {
     @Override
     public int hashCode() {
         return Objects.hash(frontMatterStyle, bodyStyle, rearMatterStyle,
-                bodyStartNumber, suppressFirstBodyFolio, folioPosition);
+                frontMatterStartNumber, bodyStartNumber, suppressFirstBodyFolio, folioPosition);
     }
 
     @Override
@@ -215,6 +240,7 @@ public final class NumberingConfig {
                 + "frontMatterStyle=" + frontMatterStyle
                 + ", bodyStyle=" + bodyStyle
                 + ", rearMatterStyle=" + rearMatterStyle
+                + ", frontMatterStartNumber=" + frontMatterStartNumber
                 + ", bodyStartNumber=" + bodyStartNumber
                 + ", suppressFirstBodyFolio=" + suppressFirstBodyFolio
                 + ", folioPosition=" + folioPosition

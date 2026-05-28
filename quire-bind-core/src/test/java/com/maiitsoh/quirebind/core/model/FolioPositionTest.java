@@ -26,12 +26,16 @@ class FolioPositionTest {
 
     @Test
     void valuesExist() {
-        assertEquals(2, FolioPosition.values().length);
+        assertEquals(6, FolioPosition.values().length);
     }
 
     @Test
     void valueOfRoundtrips() {
-        assertEquals(FolioPosition.INNER_MARGIN, FolioPosition.valueOf("INNER_MARGIN"));
-        assertEquals(FolioPosition.OUTER_MARGIN, FolioPosition.valueOf("OUTER_MARGIN"));
+        assertEquals(FolioPosition.TOP_INNER,    FolioPosition.valueOf("TOP_INNER"));
+        assertEquals(FolioPosition.TOP_CENTER,   FolioPosition.valueOf("TOP_CENTER"));
+        assertEquals(FolioPosition.TOP_OUTER,    FolioPosition.valueOf("TOP_OUTER"));
+        assertEquals(FolioPosition.BOTTOM_INNER, FolioPosition.valueOf("BOTTOM_INNER"));
+        assertEquals(FolioPosition.BOTTOM_CENTER, FolioPosition.valueOf("BOTTOM_CENTER"));
+        assertEquals(FolioPosition.BOTTOM_OUTER, FolioPosition.valueOf("BOTTOM_OUTER"));
     }
 }
