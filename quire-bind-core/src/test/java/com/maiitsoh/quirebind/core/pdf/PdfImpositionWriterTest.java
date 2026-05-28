@@ -25,6 +25,7 @@ import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
+import com.maiitsoh.quirebind.core.model.SewingConfig;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
 import com.maiitsoh.quirebind.core.model.PaddingConfig;
 import com.maiitsoh.quirebind.core.model.PaperSize;
@@ -329,6 +330,19 @@ class PdfImpositionWriterTest {
         Path out = tempDir.resolve("out.pdf");
         List<Signature> sigs = imposeFourContentPages(src);
         MarkConfig marks = MarkConfig.builder().sewingHoles(true).build();
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, marks, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithSewingHolesCustomConfig() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        SewingConfig sc = SewingConfig.builder().holeCount(7).endMarginMm(10.0).build();
+        MarkConfig marks = MarkConfig.builder().sewingHoles(true).sewingConfig(sc).build();
         PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, marks, null);
         try (PDDocument doc = Loader.loadPDF(out.toFile())) {
             assertEquals(2, doc.getNumberOfPages());

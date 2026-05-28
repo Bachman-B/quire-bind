@@ -33,6 +33,7 @@ import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.ImpositionGroup;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
+import com.maiitsoh.quirebind.core.model.SewingConfig;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
 import com.maiitsoh.quirebind.core.model.PaddingConfig;
 import com.maiitsoh.quirebind.core.model.PageSequence;
@@ -158,6 +159,9 @@ public final class MainController implements Initializable {
     @FXML private CheckBox foldLinesCheck;
     @FXML private CheckBox stitchMarksCheck;
     @FXML private CheckBox sewingHolesCheck;
+    @FXML private javafx.scene.layout.HBox sewingHolesParams;
+    @FXML private Spinner<Integer> sewingHoleCountSpinner;
+    @FXML private TextField sewingEndMarginField;
     @FXML private CheckBox trimLinesCheck;
     @FXML private ComboBox<FolioStyle> bodyFolioStyleCombo;
     @FXML private ComboBox<FolioStyle> frontMatterFolioStyleCombo;
@@ -264,6 +268,14 @@ public final class MainController implements Initializable {
         folioPositionCombo.setItems(FXCollections.observableArrayList(FolioPosition.values()));
         folioPositionCombo.setValue(FolioPosition.BOTTOM_OUTER);
 
+        // Sewing hole sub-controls
+        sewingHoleCountSpinner.setValueFactory(
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(3, 9, 5));
+        sewingHoleCountSpinner.setEditable(true);
+        sewingEndMarginField.setText("15");
+        sewingHolesCheck.selectedProperty().addListener(
+            (obs, o, n) -> sewingHolesParams.setDisable(!n));
+
         // Page list with collapsable signature headers
         pageListView.setCellFactory(lv -> new PageListCell(this::toggleSignatureCollapse));
 
@@ -309,6 +321,9 @@ public final class MainController implements Initializable {
         rearStartNumberSpinner.getValueFactory().setValue(1);
         folioPositionCombo.setValue(FolioPosition.BOTTOM_OUTER);
         suppressFirstFolioCheck.setSelected(false);
+        sewingHoleCountSpinner.getValueFactory().setValue(5);
+        sewingEndMarginField.setText("15");
+        sewingHolesParams.setDisable(true);
         showStep(0);
         setStatus("New project.");
     }
@@ -1233,10 +1248,17 @@ public final class MainController implements Initializable {
             return;
         }
         collectMarksState();
+        SewingConfig sewingConfig = state.isSewingHoles()
+            ? SewingConfig.builder()
+                .holeCount(state.getSewingHoleCount())
+                .endMarginMm(state.getSewingEndMarginMm())
+                .build()
+            : null;
         MarkConfig markConfig = MarkConfig.builder()
             .foldLines(state.isFoldLines())
             .signatureProofMarkers(state.isStitchMarks())
             .sewingHoles(state.isSewingHoles())
+            .sewingConfig(sewingConfig)
             .trimLines(state.isTrimLines())
             .build();
         NumberingConfig numberingConfig = NumberingConfig.builder()
@@ -1373,6 +1395,15 @@ public final class MainController implements Initializable {
         state.setFoldLines(foldLinesCheck.isSelected());
         state.setStitchMarks(stitchMarksCheck.isSelected());
         state.setSewingHoles(sewingHolesCheck.isSelected());
+        if (sewingHoleCountSpinner.getValue() != null) {
+            state.setSewingHoleCount(sewingHoleCountSpinner.getValue());
+        }
+        try {
+            double margin = Double.parseDouble(sewingEndMarginField.getText().trim());
+            state.setSewingEndMarginMm(margin > 0 ? margin : 15.0);
+        } catch (NumberFormatException ignored) {
+            state.setSewingEndMarginMm(15.0);
+        }
         state.setTrimLines(trimLinesCheck.isSelected());
         if (bodyFolioStyleCombo.getValue() != null) {
             state.setBodyFolioStyle(bodyFolioStyleCombo.getValue());

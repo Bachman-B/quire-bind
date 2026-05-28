@@ -179,12 +179,13 @@ public final class MarkConfig {
         return foldLines == other.foldLines
                 && signatureProofMarkers == other.signatureProofMarkers
                 && trimLines == other.trimLines
-                && sewingHoles == other.sewingHoles;
+                && sewingHoles == other.sewingHoles
+                && sewingConfig.equals(other.sewingConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(foldLines, signatureProofMarkers, trimLines, sewingHoles);
+        return Objects.hash(foldLines, signatureProofMarkers, trimLines, sewingHoles, sewingConfig);
     }
 
     @Override

@@ -20,17 +20,87 @@ package com.maiitsoh.quirebind.core.model;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SewingConfigTest {
 
     @Test
-    void constructorIsPrivateAndInvocable() throws Exception {
-        Constructor<SewingConfig> ctor = SewingConfig.class.getDeclaredConstructor();
-        assertNotNull(ctor);
-        ctor.setAccessible(true);
-        assertNotNull(ctor.newInstance());
+    void defaultsHaveExpectedValues() {
+        SewingConfig cfg = SewingConfig.defaults();
+        assertEquals(5, cfg.getHoleCount());
+        assertEquals(15.0, cfg.getEndMarginMm());
+    }
+
+    @Test
+    void builderSetsAllFields() {
+        SewingConfig cfg = SewingConfig.builder()
+                .holeCount(7)
+                .endMarginMm(12.5)
+                .build();
+        assertEquals(7, cfg.getHoleCount());
+        assertEquals(12.5, cfg.getEndMarginMm());
+    }
+
+    @Test
+    void holeCountTooLowThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SewingConfig.builder().holeCount(1).build());
+    }
+
+    @Test
+    void endMarginMmZeroThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SewingConfig.builder().endMarginMm(0).build());
+    }
+
+    @Test
+    void endMarginMmNegativeThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SewingConfig.builder().endMarginMm(-5).build());
+    }
+
+    @Test
+    void equalsSameValues() {
+        SewingConfig a = SewingConfig.builder().holeCount(5).endMarginMm(15.0).build();
+        SewingConfig b = SewingConfig.builder().holeCount(5).endMarginMm(15.0).build();
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    void equalsDifferentHoleCount() {
+        SewingConfig a = SewingConfig.builder().holeCount(3).build();
+        SewingConfig b = SewingConfig.builder().holeCount(7).build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    void equalsDifferentEndMargin() {
+        SewingConfig a = SewingConfig.builder().endMarginMm(10.0).build();
+        SewingConfig b = SewingConfig.builder().endMarginMm(20.0).build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    void equalsSelf() {
+        SewingConfig a = SewingConfig.defaults();
+        assertEquals(a, a);
+    }
+
+    @Test
+    void equalsNull() {
+        assertNotEquals(SewingConfig.defaults(), null);
+    }
+
+    @Test
+    void equalsWrongType() {
+        assertNotEquals(SewingConfig.defaults(), "other");
+    }
+
+    @Test
+    void toStringContainsFields() {
+        String s = SewingConfig.builder().holeCount(3).endMarginMm(10.0).build().toString();
+        assertTrue(s.contains("holeCount=3"));
+        assertTrue(s.contains("endMarginMm=10.0"));
     }
 }

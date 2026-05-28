@@ -261,7 +261,20 @@
                                 <Label text="Output Marks" styleClass="section-label"/>
                                 <CheckBox fx:id="foldLinesCheck"   text="Fold lines"/>
                                 <CheckBox fx:id="stitchMarksCheck" text="Stitch marks"/>
-                                <CheckBox fx:id="sewingHolesCheck" text="Sewing holes"/>
+                                <VBox spacing="3">
+                                    <CheckBox fx:id="sewingHolesCheck" text="Sewing holes"/>
+                                    <HBox fx:id="sewingHolesParams" spacing="6"
+                                          alignment="CENTER_LEFT" disable="true">
+                                        <padding><Insets left="18"/></padding>
+                                        <Label text="Holes:" styleClass="field-label"/>
+                                        <Spinner fx:id="sewingHoleCountSpinner"
+                                                 maxWidth="58" editable="true"/>
+                                        <Label text="End margin:" styleClass="field-label"/>
+                                        <TextField fx:id="sewingEndMarginField"
+                                                   maxWidth="46" promptText="15"/>
+                                        <Label text="mm"/>
+                                    </HBox>
+                                </VBox>
                                 <CheckBox fx:id="trimLinesCheck"   text="Trim lines"/>
                                 <Separator/>
                                 <Label text="Page Numbering" styleClass="section-label"/>

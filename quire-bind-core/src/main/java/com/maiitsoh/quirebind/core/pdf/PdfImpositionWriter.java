@@ -21,6 +21,7 @@ package com.maiitsoh.quirebind.core.pdf;
 import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
+import com.maiitsoh.quirebind.core.model.SewingConfig;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
 import com.maiitsoh.quirebind.core.model.PaperSize;
 import com.maiitsoh.quirebind.core.model.PageType;
@@ -175,7 +176,8 @@ public final class PdfImpositionWriter {
                 renderSignatureProofMark(cs, halfW, halfH, sigIndex, totalSigs);
             }
             if (marks.isSewingHoles()) {
-                renderSewingHoles(cs, halfW, halfH);
+                SewingConfig sc = marks.getSewingConfig().orElseGet(SewingConfig::defaults);
+                renderSewingHoles(cs, halfW, halfH, sc);
             }
             if (numberingConfig != null) {
                 renderFolio(cs, pages.get(0), numberingConfig, font, 0f, halfW, halfH);
@@ -274,13 +276,18 @@ public final class PdfImpositionWriter {
     }
 
     private static void renderSewingHoles(
-            PDPageContentStream cs, float halfW, float halfH) throws IOException {
-        int numHoles = 3;
+            PDPageContentStream cs, float halfW, float halfH,
+            SewingConfig sewingConfig) throws IOException {
+        int numHoles = sewingConfig.getHoleCount();
+        float mmToPt = 72f / 25.4f;
+        float endMarginPt = (float) (sewingConfig.getEndMarginMm() * mmToPt);
+        float y0 = endMarginPt;
+        float y1 = halfH - endMarginPt;
         float dotSize = 3f;
         cs.saveGraphicsState();
         cs.setNonStrokingColor(Color.BLACK);
         for (int i = 0; i < numHoles; i++) {
-            float y = halfH * 0.2f + (float) (i + 1) / (numHoles + 1) * halfH * 0.6f;
+            float y = y0 + (float) i / (numHoles - 1) * (y1 - y0);
             float x = halfW - dotSize / 2f;
             cs.addRect(x, y, dotSize, dotSize);
             cs.fill();

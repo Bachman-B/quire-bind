@@ -68,6 +68,8 @@ public final class WizardState {
     private boolean foldLines = false;
     private boolean stitchMarks = false;
     private boolean sewingHoles = false;
+    private int sewingHoleCount = 5;
+    private double sewingEndMarginMm = 15.0;
     private boolean trimLines = false;
 
     // Front/rear matter page counts (always multiples of 4; 0 = none)
@@ -240,6 +242,26 @@ public final class WizardState {
         this.sewingHoles = sewingHoles;
     }
 
+    /** Returns the number of sewing holes. */
+    public int getSewingHoleCount() {
+        return sewingHoleCount;
+    }
+
+    /** Sets the number of sewing holes. */
+    public void setSewingHoleCount(int sewingHoleCount) {
+        this.sewingHoleCount = sewingHoleCount;
+    }
+
+    /** Returns the distance in mm from head/tail of the spine to the first/last hole. */
+    public double getSewingEndMarginMm() {
+        return sewingEndMarginMm;
+    }
+
+    /** Sets the end margin in mm for sewing hole placement. */
+    public void setSewingEndMarginMm(double sewingEndMarginMm) {
+        this.sewingEndMarginMm = sewingEndMarginMm;
+    }
+
     /** Returns whether trim lines should be printed on the output. */
     public boolean isTrimLines() {
         return trimLines;
@@ -402,6 +424,8 @@ public final class WizardState {
         foldLines = false;
         stitchMarks = false;
         sewingHoles = false;
+        sewingHoleCount = 5;
+        sewingEndMarginMm = 15.0;
         trimLines = false;
         frontMatterPageCount = 0;
         rearMatterPageCount = 0;

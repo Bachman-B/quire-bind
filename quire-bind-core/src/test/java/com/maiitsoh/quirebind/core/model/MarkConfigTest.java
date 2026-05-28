@@ -116,6 +116,21 @@ class MarkConfigTest {
     }
 
     @Test
+    void equalsDifferentSewingConfig() {
+        SewingConfig sc = SewingConfig.builder().holeCount(7).build();
+        MarkConfig a = MarkConfig.builder().sewingHoles(true).build();
+        MarkConfig b = MarkConfig.builder().sewingHoles(true).sewingConfig(sc).build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    void toBuilderPreservesSewingConfig() {
+        SewingConfig sc = SewingConfig.builder().holeCount(7).endMarginMm(12.0).build();
+        MarkConfig original = MarkConfig.builder().sewingConfig(sc).build();
+        assertEquals(original, original.toBuilder().build());
+    }
+
+    @Test
     void toStringDoesNotThrow() {
         assertNotNull(MarkConfig.builder().build().toString());
     }
