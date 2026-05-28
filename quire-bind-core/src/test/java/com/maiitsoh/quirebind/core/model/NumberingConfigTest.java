@@ -32,6 +32,7 @@ class NumberingConfigTest {
         assertEquals(FolioStyle.NONE, cfg.getRearMatterStyle());
         assertEquals(1, cfg.getFrontMatterStartNumber());
         assertEquals(1, cfg.getBodyStartNumber());
+        assertEquals(1, cfg.getRearMatterStartNumber());
         assertFalse(cfg.isSuppressFirstBodyFolio());
         assertEquals(FolioPosition.BOTTOM_OUTER, cfg.getFolioPosition());
     }
@@ -44,6 +45,7 @@ class NumberingConfigTest {
                 .rearMatterStyle(FolioStyle.NONE)
                 .frontMatterStartNumber(3)
                 .bodyStartNumber(5)
+                .rearMatterStartNumber(7)
                 .suppressFirstBodyFolio(true)
                 .folioPosition(FolioPosition.TOP_INNER)
                 .build();
@@ -52,6 +54,7 @@ class NumberingConfigTest {
         assertEquals(FolioStyle.NONE, cfg.getRearMatterStyle());
         assertEquals(3, cfg.getFrontMatterStartNumber());
         assertEquals(5, cfg.getBodyStartNumber());
+        assertEquals(7, cfg.getRearMatterStartNumber());
         assertTrue(cfg.isSuppressFirstBodyFolio());
         assertEquals(FolioPosition.TOP_INNER, cfg.getFolioPosition());
     }
@@ -184,6 +187,25 @@ class NumberingConfigTest {
     void equalsDifferentFolioPosition() {
         NumberingConfig a = NumberingConfig.builder().build();
         NumberingConfig b = NumberingConfig.builder().folioPosition(FolioPosition.TOP_INNER).build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    void rearMatterStartNumberZeroThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> NumberingConfig.builder().rearMatterStartNumber(0));
+    }
+
+    @Test
+    void rearMatterStartNumberNegativeThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> NumberingConfig.builder().rearMatterStartNumber(-1));
+    }
+
+    @Test
+    void equalsDifferentRearMatterStartNumber() {
+        NumberingConfig a = NumberingConfig.builder().build();
+        NumberingConfig b = NumberingConfig.builder().rearMatterStartNumber(5).build();
         assertNotEquals(a, b);
     }
 

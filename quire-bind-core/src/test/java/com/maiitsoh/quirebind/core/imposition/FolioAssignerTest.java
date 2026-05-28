@@ -145,6 +145,19 @@ class FolioAssignerTest {
     }
 
     @Test
+    void rearMatterStartNumberRespected() {
+        NumberingConfig cfg = NumberingConfig.builder()
+                .rearMatterStyle(FolioStyle.ARABIC)
+                .rearMatterStartNumber(5)
+                .build();
+        List<QuirePage> pages = List.of(
+                page(PageType.CONTENT), page(PageType.AESTHETIC), page(PageType.AESTHETIC));
+        List<QuirePage> result = FolioAssigner.assign(pages, cfg);
+        assertEquals(5, result.get(1).getLogicalPageNumber().orElseThrow());
+        assertEquals(6, result.get(2).getLogicalPageNumber().orElseThrow());
+    }
+
+    @Test
     void rearMatterRomanGetsFolios() {
         NumberingConfig cfg = NumberingConfig.builder().rearMatterStyle(FolioStyle.ROMAN).build();
         List<QuirePage> pages = List.of(page(PageType.CONTENT), page(PageType.AESTHETIC));

@@ -21,6 +21,8 @@ package com.maiitsoh.quirebind.core.pdf;
 import com.maiitsoh.quirebind.core.imposition.ImpositionEngine;
 import com.maiitsoh.quirebind.core.model.BindingTechnique;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
+import com.maiitsoh.quirebind.core.model.FolioPosition;
+import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
@@ -265,6 +267,172 @@ class PdfImpositionWriterTest {
             try (PDDocument doc = Loader.loadPDF(out.toFile())) {
                 assertEquals(2, doc.getNumberOfPages());
             }
+        }
+    }
+
+    private List<Signature> imposeWithConfig(Path sourcePdf, NumberingConfig cfg) throws IOException {
+        PageSequence seq = PdfPageLoader.load(sourcePdf);
+        QuireProject project = QuireProject.builder()
+                .name("Test")
+                .bindingTechnique(BindingTechnique.SADDLE_STITCH)
+                .paperSize(PaperSize.A4)
+                .readingDirection(ReadingDirection.LTR)
+                .layout(ImpositionLayout.FOLIO)
+                .pageSequence(seq)
+                .paddingConfig(PaddingConfig.builder().build())
+                .numberingConfig(cfg)
+                .markConfig(MarkConfig.builder().build())
+                .creepConfig(CreepConfig.builder().build())
+                .build();
+        return ImpositionEngine.impose(project);
+    }
+
+    @Test
+    void writesWithFoldLines() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        MarkConfig marks = MarkConfig.builder().foldLines(true).build();
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, marks, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithTrimLines() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        MarkConfig marks = MarkConfig.builder().trimLines(true).build();
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, marks, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithSignatureProofMarkers() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        MarkConfig marks = MarkConfig.builder().signatureProofMarkers(true).build();
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, marks, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithSewingHoles() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        MarkConfig marks = MarkConfig.builder().sewingHoles(true).build();
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, marks, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioBottomOuter() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder()
+                .folioPosition(FolioPosition.BOTTOM_OUTER).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioBottomCenter() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder()
+                .folioPosition(FolioPosition.BOTTOM_CENTER).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioBottomInner() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder()
+                .folioPosition(FolioPosition.BOTTOM_INNER).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioTopOuter() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder()
+                .folioPosition(FolioPosition.TOP_OUTER).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioTopCenter() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder()
+                .folioPosition(FolioPosition.TOP_CENTER).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioTopInner() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder()
+                .folioPosition(FolioPosition.TOP_INNER).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithFolioNoneStyleSkipsNumbers() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        NumberingConfig cfg = NumberingConfig.builder().bodyStyle(FolioStyle.NONE).build();
+        List<Signature> sigs = imposeWithConfig(src, cfg);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, MarkConfig.builder().build(), cfg);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithNullMarkConfigUsesDefaults() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, null, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
         }
     }
 }

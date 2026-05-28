@@ -163,6 +163,7 @@ public final class MainController implements Initializable {
     @FXML private ComboBox<FolioStyle> rearMatterFolioStyleCombo;
     @FXML private Spinner<Integer> frontStartNumberSpinner;
     @FXML private Spinner<Integer> startNumberSpinner;
+    @FXML private Spinner<Integer> rearStartNumberSpinner;
     @FXML private ComboBox<FolioPosition> folioPositionCombo;
     @FXML private CheckBox suppressFirstFolioCheck;
     @FXML private TableView<SignatureRow> signaturesTable;
@@ -255,6 +256,9 @@ public final class MainController implements Initializable {
         startNumberSpinner.setValueFactory(
             new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 9999, 1));
         startNumberSpinner.setEditable(true);
+        rearStartNumberSpinner.setValueFactory(
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 9999, 1));
+        rearStartNumberSpinner.setEditable(true);
         folioPositionCombo.setItems(FXCollections.observableArrayList(FolioPosition.values()));
         folioPositionCombo.setValue(FolioPosition.BOTTOM_OUTER);
 
@@ -299,6 +303,7 @@ public final class MainController implements Initializable {
         rearMatterFolioStyleCombo.setValue(FolioStyle.NONE);
         frontStartNumberSpinner.getValueFactory().setValue(1);
         startNumberSpinner.getValueFactory().setValue(1);
+        rearStartNumberSpinner.getValueFactory().setValue(1);
         folioPositionCombo.setValue(FolioPosition.BOTTOM_OUTER);
         suppressFirstFolioCheck.setSelected(false);
         showStep(0);
@@ -503,6 +508,7 @@ public final class MainController implements Initializable {
             .build();
         seq.insertPage(0, dec);
         seq.reindex();
+        shiftThumbnailCacheUp(0);
         rebuildPageList();
         pageListView.getSelectionModel().select(0);
         setStatus("Decorative page added at front.");
@@ -573,6 +579,7 @@ public final class MainController implements Initializable {
             .build();
         seq.insertPage(clamped, blank);
         seq.reindex();
+        shiftThumbnailCacheUp(clamped);
         rebuildPageList();
         // Re-select the newly inserted blank
         for (int i = 0; i < pageListView.getItems().size(); i++) {
@@ -597,8 +604,10 @@ public final class MainController implements Initializable {
         if (item.isHeader()) {
             return;
         }
-        seq.removePage(item.seqIndex());
+        int removedIdx = item.seqIndex();
+        seq.removePage(removedIdx);
         seq.reindex();
+        shiftThumbnailCacheDown(removedIdx);
         rebuildPageList();
         setStatus("Page removed.");
     }
@@ -617,6 +626,7 @@ public final class MainController implements Initializable {
         int from = item.seqIndex();
         seq.movePage(from, from - 1);
         seq.reindex();
+        swapThumbnailCache(from, from - 1);
         rebuildPageList();
         reselectBySeqIndex(from - 1);
     }
@@ -635,6 +645,7 @@ public final class MainController implements Initializable {
         int from = item.seqIndex();
         seq.movePage(from, from + 1);
         seq.reindex();
+        swapThumbnailCache(from, from + 1);
         rebuildPageList();
         reselectBySeqIndex(from + 1);
     }
@@ -667,6 +678,44 @@ public final class MainController implements Initializable {
             }
         }
         return last;
+    }
+
+    private void shiftThumbnailCacheUp(int fromSeqIndex) {
+        Map<Integer, Image> shifted = new HashMap<>();
+        for (Map.Entry<Integer, Image> entry : thumbnailCache.entrySet()) {
+            int k = entry.getKey();
+            shifted.put(k >= fromSeqIndex ? k + 1 : k, entry.getValue());
+        }
+        thumbnailCache.clear();
+        thumbnailCache.putAll(shifted);
+    }
+
+    private void shiftThumbnailCacheDown(int removedSeqIndex) {
+        Map<Integer, Image> shifted = new HashMap<>();
+        for (Map.Entry<Integer, Image> entry : thumbnailCache.entrySet()) {
+            int k = entry.getKey();
+            if (k == removedSeqIndex) {
+                continue;
+            }
+            shifted.put(k > removedSeqIndex ? k - 1 : k, entry.getValue());
+        }
+        thumbnailCache.clear();
+        thumbnailCache.putAll(shifted);
+    }
+
+    private void swapThumbnailCache(int a, int b) {
+        Image imgA = thumbnailCache.get(a);
+        Image imgB = thumbnailCache.get(b);
+        if (imgA != null) {
+            thumbnailCache.put(b, imgA);
+        } else {
+            thumbnailCache.remove(b);
+        }
+        if (imgB != null) {
+            thumbnailCache.put(a, imgB);
+        } else {
+            thumbnailCache.remove(a);
+        }
     }
 
     private void toggleSignatureCollapse(int sigNum) {
@@ -761,13 +810,17 @@ public final class MainController implements Initializable {
     }
 
     private void updateSidePanel(PageItem item) {
-        if (item == null || item.isHeader()) {
+        if (item == null) {
             thumbnailView.setVisible(false);
             thumbnailView.setManaged(false);
             thumbnailPlaceholder.setText("Select a page");
             thumbnailPlaceholder.setVisible(true);
             thumbnailPlaceholder.setManaged(true);
             pageLabelField.setText("");
+            return;
+        }
+        if (item.isHeader()) {
+            // Don't disturb the current display when a header row is clicked
             return;
         }
         thumbnailPlaceholder.setVisible(false);
@@ -1045,6 +1098,7 @@ public final class MainController implements Initializable {
                 .rearMatterStyle(state.getRearMatterFolioStyle())
                 .frontMatterStartNumber(state.getFrontMatterStartNumber())
                 .bodyStartNumber(state.getBodyStartNumber())
+                .rearMatterStartNumber(state.getRearMatterStartNumber())
                 .suppressFirstBodyFolio(state.isSuppressFirstFolio())
                 .folioPosition(state.getFolioPosition())
                 .build())
@@ -1071,6 +1125,7 @@ public final class MainController implements Initializable {
         if (f != null) {
             state.setOutputPdf(f.toPath());
             outputPathField.setText(f.toString());
+            exportButton.setDisable(false);
         }
     }
 
@@ -1085,12 +1140,30 @@ public final class MainController implements Initializable {
             return;
         }
         collectMarksState();
+        MarkConfig markConfig = MarkConfig.builder()
+            .foldLines(state.isFoldLines())
+            .signatureProofMarkers(state.isStitchMarks())
+            .sewingHoles(state.isSewingHoles())
+            .trimLines(state.isTrimLines())
+            .build();
+        NumberingConfig numberingConfig = NumberingConfig.builder()
+            .frontMatterStyle(state.getFrontMatterFolioStyle())
+            .bodyStyle(state.getBodyFolioStyle())
+            .rearMatterStyle(state.getRearMatterFolioStyle())
+            .frontMatterStartNumber(state.getFrontMatterStartNumber())
+            .bodyStartNumber(state.getBodyStartNumber())
+            .rearMatterStartNumber(state.getRearMatterStartNumber())
+            .suppressFirstBodyFolio(state.isSuppressFirstFolio())
+            .folioPosition(state.getFolioPosition())
+            .build();
         try {
             PdfImpositionWriter.write(
                 state.getImpositionResult(),
                 state.getInputPdf(),
                 state.getOutputPdf(),
-                state.getPaperSize());
+                state.getPaperSize(),
+                markConfig,
+                numberingConfig);
             exportResultLabel.setText("Exported: " + state.getOutputPdf().getFileName());
             exportButton.setDisable(true);
             setStatus("Export complete.");
@@ -1222,6 +1295,9 @@ public final class MainController implements Initializable {
         }
         if (startNumberSpinner.getValue() != null) {
             state.setBodyStartNumber(startNumberSpinner.getValue());
+        }
+        if (rearStartNumberSpinner.getValue() != null) {
+            state.setRearMatterStartNumber(rearStartNumberSpinner.getValue());
         }
         if (folioPositionCombo.getValue() != null) {
             state.setFolioPosition(folioPositionCombo.getValue());
@@ -1375,7 +1451,7 @@ public final class MainController implements Initializable {
                 ? String.format("%.3f mm", maxCreep) : "—";
             return new SignatureRow(
                 sig.getSignatureIndex() + 1,
-                sig.getLogicalPageNumbers().size(),
+                sig.getSheets().size() * 4,
                 sig.getSheets().size(),
                 creep);
         }

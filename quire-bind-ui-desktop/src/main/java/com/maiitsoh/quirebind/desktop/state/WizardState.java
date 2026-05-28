@@ -80,6 +80,7 @@ public final class WizardState {
     private FolioStyle rearMatterFolioStyle = FolioStyle.NONE;
     private int frontMatterStartNumber = 1;
     private int bodyStartNumber = 1;
+    private int rearMatterStartNumber = 1;
     private boolean suppressFirstFolio = false;
     private FolioPosition folioPosition = FolioPosition.BOTTOM_OUTER;
 
@@ -319,6 +320,16 @@ public final class WizardState {
         this.bodyStartNumber = bodyStartNumber;
     }
 
+    /** Returns the start number assigned to the first rear matter page. */
+    public int getRearMatterStartNumber() {
+        return rearMatterStartNumber;
+    }
+
+    /** Sets the start number for the first rear matter page. */
+    public void setRearMatterStartNumber(int rearMatterStartNumber) {
+        this.rearMatterStartNumber = rearMatterStartNumber;
+    }
+
     /** Returns whether the folio is suppressed on the first body page. */
     public boolean isSuppressFirstFolio() {
         return suppressFirstFolio;
@@ -399,6 +410,7 @@ public final class WizardState {
         rearMatterFolioStyle = FolioStyle.NONE;
         frontMatterStartNumber = 1;
         bodyStartNumber = 1;
+        rearMatterStartNumber = 1;
         suppressFirstFolio = false;
         folioPosition = FolioPosition.BOTTOM_OUTER;
         impositionResult = null;

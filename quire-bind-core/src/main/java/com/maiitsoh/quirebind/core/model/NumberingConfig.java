@@ -34,6 +34,7 @@ public final class NumberingConfig {
     private final FolioStyle rearMatterStyle;
     private final int frontMatterStartNumber;
     private final int bodyStartNumber;
+    private final int rearMatterStartNumber;
     private final boolean suppressFirstBodyFolio;
     private final FolioPosition folioPosition;
 
@@ -43,6 +44,7 @@ public final class NumberingConfig {
         this.rearMatterStyle = builder.rearMatterStyle;
         this.frontMatterStartNumber = builder.frontMatterStartNumber;
         this.bodyStartNumber = builder.bodyStartNumber;
+        this.rearMatterStartNumber = builder.rearMatterStartNumber;
         this.suppressFirstBodyFolio = builder.suppressFirstBodyFolio;
         this.folioPosition = builder.folioPosition;
     }
@@ -72,6 +74,11 @@ public final class NumberingConfig {
         return bodyStartNumber;
     }
 
+    /** Returns the number assigned to the first rear matter page. */
+    public int getRearMatterStartNumber() {
+        return rearMatterStartNumber;
+    }
+
     /**
      * Returns true if the folio is suppressed on the first body page.
      * The page still receives a logical number; only the printed folio is omitted.
@@ -97,6 +104,7 @@ public final class NumberingConfig {
                 .rearMatterStyle(this.rearMatterStyle)
                 .frontMatterStartNumber(this.frontMatterStartNumber)
                 .bodyStartNumber(this.bodyStartNumber)
+                .rearMatterStartNumber(this.rearMatterStartNumber)
                 .suppressFirstBodyFolio(this.suppressFirstBodyFolio)
                 .folioPosition(this.folioPosition);
     }
@@ -114,6 +122,7 @@ public final class NumberingConfig {
         private FolioStyle rearMatterStyle = FolioStyle.NONE;
         private int frontMatterStartNumber = 1;
         private int bodyStartNumber = 1;
+        private int rearMatterStartNumber = 1;
         private boolean suppressFirstBodyFolio = false;
         private FolioPosition folioPosition = FolioPosition.BOTTOM_OUTER;
 
@@ -184,6 +193,21 @@ public final class NumberingConfig {
         }
 
         /**
+         * Sets the first rear matter page number.
+         *
+         * @param rearMatterStartNumber must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if not positive
+         */
+        public Builder rearMatterStartNumber(int rearMatterStartNumber) {
+            if (rearMatterStartNumber < 1) {
+                throw new IllegalArgumentException("rearMatterStartNumber must be >= 1");
+            }
+            this.rearMatterStartNumber = rearMatterStartNumber;
+            return this;
+        }
+
+        /**
          * Sets whether the printed folio is suppressed on the first body page.
          *
          * @param suppressFirstBodyFolio true to suppress
@@ -221,6 +245,7 @@ public final class NumberingConfig {
         }
         return frontMatterStartNumber == other.frontMatterStartNumber
                 && bodyStartNumber == other.bodyStartNumber
+                && rearMatterStartNumber == other.rearMatterStartNumber
                 && suppressFirstBodyFolio == other.suppressFirstBodyFolio
                 && frontMatterStyle == other.frontMatterStyle
                 && bodyStyle == other.bodyStyle
@@ -231,7 +256,8 @@ public final class NumberingConfig {
     @Override
     public int hashCode() {
         return Objects.hash(frontMatterStyle, bodyStyle, rearMatterStyle,
-                frontMatterStartNumber, bodyStartNumber, suppressFirstBodyFolio, folioPosition);
+                frontMatterStartNumber, bodyStartNumber, rearMatterStartNumber,
+                suppressFirstBodyFolio, folioPosition);
     }
 
     @Override
@@ -242,6 +268,7 @@ public final class NumberingConfig {
                 + ", rearMatterStyle=" + rearMatterStyle
                 + ", frontMatterStartNumber=" + frontMatterStartNumber
                 + ", bodyStartNumber=" + bodyStartNumber
+                + ", rearMatterStartNumber=" + rearMatterStartNumber
                 + ", suppressFirstBodyFolio=" + suppressFirstBodyFolio
                 + ", folioPosition=" + folioPosition
                 + '}';

@@ -307,6 +307,9 @@
                                     <ComboBox fx:id="rearMatterFolioStyleCombo"
                                               GridPane.rowIndex="3" GridPane.columnIndex="1"
                                               maxWidth="Infinity"/>
+                                    <Spinner fx:id="rearStartNumberSpinner"
+                                             GridPane.rowIndex="3" GridPane.columnIndex="2"
+                                             maxWidth="64"/>
                                     <!-- Position -->
                                     <Label text="Position:"
                                            GridPane.rowIndex="4" GridPane.columnIndex="0"

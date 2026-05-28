@@ -18,7 +18,10 @@
  */
 package com.maiitsoh.quirebind.core.pdf;
 
+import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.ImposedSheet;
+import com.maiitsoh.quirebind.core.model.MarkConfig;
+import com.maiitsoh.quirebind.core.model.NumberingConfig;
 import com.maiitsoh.quirebind.core.model.PaperSize;
 import com.maiitsoh.quirebind.core.model.PageType;
 import com.maiitsoh.quirebind.core.model.QuirePage;
@@ -29,9 +32,13 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.util.Matrix;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -63,11 +70,11 @@ public final class PdfImpositionWriter {
     }
 
     /**
-     * Writes the imposed output PDF to {@code outputPath}.
+     * Writes the imposed output PDF without marks or folios.
      *
-     * @param signatures    composed signatures from the imposition engine; must not be null
+     * @param signatures    composed signatures; must not be null
      * @param sourcePdfPath path to the source PDF, or {@code null} if all pages are blank
-     * @param outputPath    destination path for the imposed PDF; must not be null
+     * @param outputPath    destination path; must not be null
      * @param paperSize     book page size; must not be null; {@code CUSTOM} is unsupported
      * @throws IOException                   if any file operation fails
      * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
@@ -77,23 +84,54 @@ public final class PdfImpositionWriter {
             Path sourcePdfPath,
             Path outputPath,
             PaperSize paperSize) throws IOException {
+        write(signatures, sourcePdfPath, outputPath, paperSize,
+                MarkConfig.builder().build(), null);
+    }
+
+    /**
+     * Writes the imposed output PDF with optional marks and folios.
+     *
+     * @param signatures       composed signatures; must not be null
+     * @param sourcePdfPath    path to the source PDF, or {@code null} if all pages are blank
+     * @param outputPath       destination path; must not be null
+     * @param paperSize        book page size; must not be null; {@code CUSTOM} is unsupported
+     * @param markConfig       controls which output marks are rendered; null disables all marks
+     * @param numberingConfig  controls folio rendering; null disables folio output
+     * @throws IOException                   if any file operation fails
+     * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
+     */
+    public static void write(
+            List<Signature> signatures,
+            Path sourcePdfPath,
+            Path outputPath,
+            PaperSize paperSize,
+            MarkConfig markConfig,
+            NumberingConfig numberingConfig) throws IOException {
         Objects.requireNonNull(signatures, "signatures");
         Objects.requireNonNull(outputPath, "outputPath");
         Objects.requireNonNull(paperSize, "paperSize");
 
+        MarkConfig marks = markConfig != null ? markConfig : MarkConfig.builder().build();
         PDRectangle bookRect = bookPageRect(paperSize);
         PDRectangle sheetRect = new PDRectangle(bookRect.getWidth() * 2, bookRect.getHeight());
+        int totalSigs = signatures.size();
 
+        PDFont font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
         PDDocument srcDoc = sourcePdfPath != null ? Loader.loadPDF(sourcePdfPath.toFile()) : null;
         try {
             try (PDDocument outDoc = new PDDocument()) {
                 LayerUtility layers = new LayerUtility(outDoc);
                 for (Signature sig : signatures) {
+                    int sheetsInSig = sig.getSheets().size();
                     for (ImposedSheet sheet : sig.getSheets()) {
                         addSheetPage(outDoc, layers, srcDoc, sheetRect, bookRect,
-                                sheet.getFrontPages());
+                                sheet.getFrontPages(), marks, numberingConfig, font,
+                                sheet.getSheetIndex(), sheetsInSig,
+                                sig.getSignatureIndex(), totalSigs);
                         addSheetPage(outDoc, layers, srcDoc, sheetRect, bookRect,
-                                sheet.getBackPages());
+                                sheet.getBackPages(), marks, numberingConfig, font,
+                                sheet.getSheetIndex(), sheetsInSig,
+                                sig.getSignatureIndex(), totalSigs);
                     }
                 }
                 outDoc.save(outputPath.toFile());
@@ -111,14 +149,38 @@ public final class PdfImpositionWriter {
             PDDocument srcDoc,
             PDRectangle sheetRect,
             PDRectangle bookRect,
-            List<QuirePage> pages) throws IOException {
+            List<QuirePage> pages,
+            MarkConfig marks,
+            NumberingConfig numberingConfig,
+            PDFont font,
+            int sheetIndex,
+            int sheetsInSig,
+            int sigIndex,
+            int totalSigs) throws IOException {
         PDPage outPage = new PDPage(sheetRect);
         outDoc.addPage(outPage);
+        float halfW = bookRect.getWidth();
+        float halfH = bookRect.getHeight();
         try (PDPageContentStream cs = new PDPageContentStream(outDoc, outPage)) {
-            float halfW = bookRect.getWidth();
-            float halfH = bookRect.getHeight();
             placePageOnSheet(outDoc, layers, cs, srcDoc, pages.get(0), 0f, halfW, halfH);
             placePageOnSheet(outDoc, layers, cs, srcDoc, pages.get(1), halfW, halfW, halfH);
+            if (marks.isFoldLines()) {
+                renderFoldLine(cs, halfW, halfH);
+            }
+            if (marks.isTrimLines()) {
+                renderTrimLines(cs, 0f, halfW, halfH);
+                renderTrimLines(cs, halfW, halfW, halfH);
+            }
+            if (marks.isSignatureProofMarkers()) {
+                renderSignatureProofMark(cs, halfW, halfH, sigIndex, totalSigs);
+            }
+            if (marks.isSewingHoles()) {
+                renderSewingHoles(cs, halfW, halfH);
+            }
+            if (numberingConfig != null) {
+                renderFolio(cs, pages.get(0), numberingConfig, font, 0f, halfW, halfH);
+                renderFolio(cs, pages.get(1), numberingConfig, font, halfW, halfW, halfH);
+            }
         }
     }
 
@@ -150,6 +212,128 @@ public final class PdfImpositionWriter {
         cs.transform(new Matrix(scale, 0, 0, scale, tx, ty));
         cs.drawForm(form);
         cs.restoreGraphicsState();
+    }
+
+    private static void renderFoldLine(
+            PDPageContentStream cs, float halfW, float halfH) throws IOException {
+        cs.saveGraphicsState();
+        cs.setStrokingColor(new Color(0.65f, 0.65f, 0.65f));
+        cs.setLineWidth(0.5f);
+        cs.moveTo(halfW, 0);
+        cs.lineTo(halfW, halfH);
+        cs.stroke();
+        cs.restoreGraphicsState();
+    }
+
+    private static void renderTrimLines(
+            PDPageContentStream cs, float xOffset, float halfW, float halfH) throws IOException {
+        float trimLen = 8f;
+        float inset = 4f;
+        cs.saveGraphicsState();
+        cs.setStrokingColor(Color.BLACK);
+        cs.setLineWidth(0.25f);
+        // Bottom-left corner
+        cs.moveTo(xOffset + inset + trimLen, inset);
+        cs.lineTo(xOffset + inset, inset);
+        cs.lineTo(xOffset + inset, inset + trimLen);
+        cs.stroke();
+        // Bottom-right corner
+        cs.moveTo(xOffset + halfW - inset - trimLen, inset);
+        cs.lineTo(xOffset + halfW - inset, inset);
+        cs.lineTo(xOffset + halfW - inset, inset + trimLen);
+        cs.stroke();
+        // Top-left corner
+        cs.moveTo(xOffset + inset + trimLen, halfH - inset);
+        cs.lineTo(xOffset + inset, halfH - inset);
+        cs.lineTo(xOffset + inset, halfH - inset - trimLen);
+        cs.stroke();
+        // Top-right corner
+        cs.moveTo(xOffset + halfW - inset - trimLen, halfH - inset);
+        cs.lineTo(xOffset + halfW - inset, halfH - inset);
+        cs.lineTo(xOffset + halfW - inset, halfH - inset - trimLen);
+        cs.stroke();
+        cs.restoreGraphicsState();
+    }
+
+    private static void renderSignatureProofMark(
+            PDPageContentStream cs, float halfW, float halfH,
+            int sigIndex, int totalSigs) throws IOException {
+        float markH = 6f;
+        float markW = 14f;
+        float rangeH = halfH * 0.8f;
+        float startY = halfH * 0.1f;
+        float denominator = Math.max(totalSigs - 1, 1);
+        float y = startY + (float) sigIndex / denominator * rangeH;
+        float x = halfW - markW / 2f;
+        float shade = 0.2f + 0.6f * ((float) sigIndex / Math.max(totalSigs, 1));
+        cs.saveGraphicsState();
+        cs.setNonStrokingColor(new Color(shade, shade * 0.5f, 0.1f));
+        cs.addRect(x, y, markW, markH);
+        cs.fill();
+        cs.restoreGraphicsState();
+    }
+
+    private static void renderSewingHoles(
+            PDPageContentStream cs, float halfW, float halfH) throws IOException {
+        int numHoles = 3;
+        float dotSize = 3f;
+        cs.saveGraphicsState();
+        cs.setNonStrokingColor(Color.BLACK);
+        for (int i = 0; i < numHoles; i++) {
+            float y = halfH * 0.2f + (float) (i + 1) / (numHoles + 1) * halfH * 0.6f;
+            float x = halfW - dotSize / 2f;
+            cs.addRect(x, y, dotSize, dotSize);
+            cs.fill();
+        }
+        cs.restoreGraphicsState();
+    }
+
+    private static void renderFolio(
+            PDPageContentStream cs,
+            QuirePage page,
+            NumberingConfig numberingConfig,
+            PDFont font,
+            float xOffset,
+            float halfW,
+            float halfH) throws IOException {
+        if (page.getLogicalPageNumber().isEmpty()) {
+            return;
+        }
+        int num = page.getLogicalPageNumber().get();
+        String text = String.valueOf(num);
+        float fontSize = 8f;
+        float textWidth = font.getStringWidth(text) / 1000f * fontSize;
+        float margin = 14f;
+        FolioPosition pos = numberingConfig.getFolioPosition();
+        boolean isLeftHalf = xOffset < halfW;
+        float x;
+        float y;
+        if (pos == FolioPosition.BOTTOM_OUTER) {
+            y = margin;
+            x = isLeftHalf ? margin : xOffset + halfW - margin - textWidth;
+        } else if (pos == FolioPosition.BOTTOM_CENTER) {
+            y = margin;
+            x = xOffset + halfW / 2f - textWidth / 2f;
+        } else if (pos == FolioPosition.BOTTOM_INNER) {
+            y = margin;
+            x = isLeftHalf ? xOffset + halfW - margin - textWidth : xOffset + margin;
+        } else if (pos == FolioPosition.TOP_OUTER) {
+            y = halfH - margin - fontSize;
+            x = isLeftHalf ? margin : xOffset + halfW - margin - textWidth;
+        } else if (pos == FolioPosition.TOP_CENTER) {
+            y = halfH - margin - fontSize;
+            x = xOffset + halfW / 2f - textWidth / 2f;
+        } else {
+            // TOP_INNER (default fallback)
+            y = halfH - margin - fontSize;
+            x = isLeftHalf ? xOffset + halfW - margin - textWidth : xOffset + margin;
+        }
+        cs.beginText();
+        cs.setFont(font, fontSize);
+        cs.setNonStrokingColor(Color.BLACK);
+        cs.newLineAtOffset(x, y);
+        cs.showText(text);
+        cs.endText();
     }
 
     private static PDRectangle bookPageRect(PaperSize size) {
