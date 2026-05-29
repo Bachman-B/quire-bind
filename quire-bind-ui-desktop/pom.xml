@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.maiitsoh.quirebind</groupId>
         <artifactId>quire-bind</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>quire-bind-ui-desktop</artifactId>
@@ -17,6 +17,7 @@
 
     <properties>
         <javafx-maven-plugin.version>0.0.8</javafx-maven-plugin.version>
+        <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
     </properties>
 
     <dependencies>
@@ -71,6 +72,38 @@
                 <configuration>
                     <mainClass>com.maiitsoh.quirebind.desktop.QuireBindDesktop</mainClass>
                 </configuration>
+            </plugin>
+
+            <!-- Stage JARs for jpackage:
+                 mods/ → JavaFX modular JARs (platform-native, resolved per runner OS)
+                 libs/ → all other runtime deps
+                 The main artifact JAR is copied into libs/ by the release workflow. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven-dependency-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>copy-javafx-mods</id>
+                        <phase>package</phase>
+                        <goals><goal>copy-dependencies</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/mods</outputDirectory>
+                            <includeGroupIds>org.openjfx</includeGroupIds>
+                            <includeScope>runtime</includeScope>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-app-libs</id>
+                        <phase>package</phase>
+                        <goals><goal>copy-dependencies</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <excludeGroupIds>org.openjfx</excludeGroupIds>
+                            <includeScope>runtime</includeScope>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

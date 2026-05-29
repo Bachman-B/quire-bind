@@ -6,77 +6,305 @@ on:
       - 'v*.*.*'
 
 jobs:
+
+  # ── Linux: .deb, .rpm, AppImage ─────────────────────────────────────────────
   build-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
+          cache: maven
 
-      - name: Build Linux installer
-        run: mvn -pl quire-ui-desktop package -Pjpackage -B
+      - name: Extract version from tag
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+      - name: Build
+        run: mvn -pl quire-bind-ui-desktop -am package -DskipTests -B
+
+      - name: Stage main JAR into libs/
+        run: cp quire-bind-ui-desktop/target/quire-bind-ui-desktop-*.jar quire-bind-ui-desktop/target/libs/
+
+      - name: Install packaging tools
+        run: sudo apt-get install -y rpm fakeroot
+
+      - name: Build .deb
+        run: |
+          mkdir -p dist
+          jpackage \
+            --input         quire-bind-ui-desktop/target/libs \
+            --module-path   quire-bind-ui-desktop/target/mods \
+            --add-modules   javafx.controls,javafx.fxml,javafx.web \
+            --main-jar      quire-bind-ui-desktop-${{ env.APP_VERSION }}.jar \
+            --main-class    com.maiitsoh.quirebind.desktop.QuireBindDesktop \
+            --name          QuireBind \
+            --app-version   ${{ env.APP_VERSION }} \
+            --vendor        QuireBind \
+            --description   "PDF imposition tool for bookbinding" \
+            --linux-shortcut \
+            --type          deb \
+            --dest          dist
+
+      - name: Build .rpm
+        run: |
+          jpackage \
+            --input         quire-bind-ui-desktop/target/libs \
+            --module-path   quire-bind-ui-desktop/target/mods \
+            --add-modules   javafx.controls,javafx.fxml,javafx.web \
+            --main-jar      quire-bind-ui-desktop-${{ env.APP_VERSION }}.jar \
+            --main-class    com.maiitsoh.quirebind.desktop.QuireBindDesktop \
+            --name          QuireBind \
+            --app-version   ${{ env.APP_VERSION }} \
+            --vendor        QuireBind \
+            --description   "PDF imposition tool for bookbinding" \
+            --linux-shortcut \
+            --type          rpm \
+            --dest          dist
+
+      - name: Build AppImage
+        run: |
+          # Build self-contained app-image directory first
+          jpackage \
+            --input         quire-bind-ui-desktop/target/libs \
+            --module-path   quire-bind-ui-desktop/target/mods \
+            --add-modules   javafx.controls,javafx.fxml,javafx.web \
+            --main-jar      quire-bind-ui-desktop-${{ env.APP_VERSION }}.jar \
+            --main-class    com.maiitsoh.quirebind.desktop.QuireBindDesktop \
+            --name          QuireBind \
+            --app-version   ${{ env.APP_VERSION }} \
+            --type          app-image \
+            --dest          appimage-stage
+
+          # Rename to AppDir convention
+          mv appimage-stage/QuireBind QuireBind.AppDir
+
+          # AppRun launcher
+          cat > QuireBind.AppDir/AppRun << 'APPRUN'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          exec "$HERE/bin/QuireBind" "$@"
+          APPRUN
+          chmod +x QuireBind.AppDir/AppRun
+
+          # .desktop entry
+          cat > QuireBind.AppDir/QuireBind.desktop << 'DESKTOP'
+          [Desktop Entry]
+          Name=QuireBind
+          Exec=QuireBind
+          Icon=QuireBind
+          Type=Application
+          Categories=Office;
+          DESKTOP
+
+          # Placeholder icon (256×256 solid blue PNG, generated without extra deps)
+          python3 - << 'PYEOF'
+          import struct, zlib
+          def chunk(tag, data):
+              c = tag + data
+              return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+          raw = b''.join(b'\x00' + bytes([70, 130, 180]) * 256 for _ in range(256))
+          png = (b'\x89PNG\r\n\x1a\n'
+                 + chunk(b'IHDR', struct.pack('>IIBBBBB', 256, 256, 8, 2, 0, 0, 0))
+                 + chunk(b'IDAT', zlib.compress(raw))
+                 + chunk(b'IEND', b''))
+          open('QuireBind.AppDir/QuireBind.png', 'wb').write(png)
+          PYEOF
+
+          # Download and run appimagetool (APPIMAGE_EXTRACT_AND_RUN avoids FUSE requirement)
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" \
+            -O appimagetool
+          chmod +x appimagetool
+          APPIMAGE_EXTRACT_AND_RUN=1 ARCH=x86_64 \
+            ./appimagetool QuireBind.AppDir dist/QuireBind-${{ env.APP_VERSION }}-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: quire-linux
-          path: quire-ui-desktop/target/dist/*.deb
+          name: linux-packages
+          path: dist/
 
+  # ── Windows: .msi ────────────────────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
+          cache: maven
 
-      - name: Build Windows installer
-        run: mvn -pl quire-ui-desktop package -Pjpackage -B
+      - name: Extract version from tag
+        shell: pwsh
+        run: |
+          $v = $env:GITHUB_REF_NAME -replace '^v', ''
+          "APP_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+      - name: Build
+        run: mvn -pl quire-bind-ui-desktop -am package -DskipTests -B
+
+      - name: Stage main JAR into libs\
+        shell: pwsh
+        run: Copy-Item quire-bind-ui-desktop\target\quire-bind-ui-desktop-*.jar quire-bind-ui-desktop\target\libs\
+
+      - name: Build .msi
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          jpackage `
+            --input       quire-bind-ui-desktop\target\libs `
+            --module-path quire-bind-ui-desktop\target\mods `
+            --add-modules javafx.controls,javafx.fxml,javafx.web `
+            --main-jar    "quire-bind-ui-desktop-$env:APP_VERSION.jar" `
+            --main-class  com.maiitsoh.quirebind.desktop.QuireBindDesktop `
+            --name        QuireBind `
+            --app-version $env:APP_VERSION `
+            --vendor      QuireBind `
+            --win-menu `
+            --win-shortcut `
+            --type        msi `
+            --dest        dist
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: quire-windows
-          path: quire-ui-desktop/target/dist/*.msi
+          name: windows-package
+          path: dist\
 
-  build-macos:
+  # ── macOS x86_64: .dmg ───────────────────────────────────────────────────────
+  build-macos-x64:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Extract version from tag
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+      - name: Build
+        run: mvn -pl quire-bind-ui-desktop -am package -DskipTests -B
+
+      - name: Stage main JAR into libs/
+        run: cp quire-bind-ui-desktop/target/quire-bind-ui-desktop-*.jar quire-bind-ui-desktop/target/libs/
+
+      - name: Build .dmg (x86_64)
+        run: |
+          mkdir -p dist
+          jpackage \
+            --input         quire-bind-ui-desktop/target/libs \
+            --module-path   quire-bind-ui-desktop/target/mods \
+            --add-modules   javafx.controls,javafx.fxml,javafx.web \
+            --main-jar      quire-bind-ui-desktop-${{ env.APP_VERSION }}.jar \
+            --main-class    com.maiitsoh.quirebind.desktop.QuireBindDesktop \
+            --name          QuireBind \
+            --app-version   ${{ env.APP_VERSION }} \
+            --vendor        QuireBind \
+            --type          dmg \
+            --dest          dist
+          mv dist/QuireBind-${{ env.APP_VERSION }}.dmg dist/QuireBind-${{ env.APP_VERSION }}-x86_64.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-x64-package
+          path: dist/
+
+  # ── macOS arm64: .dmg ────────────────────────────────────────────────────────
+  build-macos-arm64:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
+          cache: maven
 
-      - name: Build macOS installer
-        run: mvn -pl quire-ui-desktop package -Pjpackage -B
+      - name: Extract version from tag
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+      - name: Build
+        run: mvn -pl quire-bind-ui-desktop -am package -DskipTests -B
+
+      - name: Stage main JAR into libs/
+        run: cp quire-bind-ui-desktop/target/quire-bind-ui-desktop-*.jar quire-bind-ui-desktop/target/libs/
+
+      - name: Build .dmg (arm64)
+        run: |
+          mkdir -p dist
+          jpackage \
+            --input         quire-bind-ui-desktop/target/libs \
+            --module-path   quire-bind-ui-desktop/target/mods \
+            --add-modules   javafx.controls,javafx.fxml,javafx.web \
+            --main-jar      quire-bind-ui-desktop-${{ env.APP_VERSION }}.jar \
+            --main-class    com.maiitsoh.quirebind.desktop.QuireBindDesktop \
+            --name          QuireBind \
+            --app-version   ${{ env.APP_VERSION }} \
+            --vendor        QuireBind \
+            --type          dmg \
+            --dest          dist
+          mv dist/QuireBind-${{ env.APP_VERSION }}.dmg dist/QuireBind-${{ env.APP_VERSION }}-arm64.dmg
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: quire-macos
-          path: quire-ui-desktop/target/dist/*.dmg
+          name: macos-arm64-package
+          path: dist/
 
-  create-release:
-    needs: [build-linux, build-windows, build-macos]
+  # ── Web: Spring Boot fat JAR ─────────────────────────────────────────────────
+  build-web:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Extract version from tag
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+      - name: Build web JAR
+        run: mvn -pl quire-bind-ui-web -am package -DskipTests -B
+
+      - name: Stage web JAR
+        run: |
+          mkdir -p dist
+          cp quire-bind-ui-web/target/quire-bind-ui-web-*.jar \
+             dist/QuireBind-Web-${{ env.APP_VERSION }}.jar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-jar
+          path: dist/
+
+  # ── GitHub Release ───────────────────────────────────────────────────────────
+  create-release:
+    needs: [build-linux, build-windows, build-macos-x64, build-macos-arm64, build-web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: release-assets
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: |
-            quire-linux/*.deb
-            quire-windows/*.msi
-            quire-macos/*.dmg
+          name: "QuireBind ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-assets/**/*

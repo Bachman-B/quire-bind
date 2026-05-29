@@ -11,3 +11,5 @@ Thumbs.db
 quire-project-docs/
 quire-project-docs.zip
 .claude/
+*.pdf
+*.quire
