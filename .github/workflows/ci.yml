@@ -21,8 +21,13 @@ jobs:
       - name: Build and run all tests
         run: mvn verify -B
 
+      - name: Generate Maven site
+        if: github.ref == 'refs/heads/main'
+        run: mvn site -B -DskipTests
+
       - name: Publish reports to GitHub Pages
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
