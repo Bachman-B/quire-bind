@@ -2061,9 +2061,16 @@ public final class MainController implements Initializable {
                 : 0.0;
             String creep = maxCreep > 0
                 ? String.format("%.3f mm", maxCreep) : "—";
+            // Count only content/aesthetic pages — not completion blanks
+            long contentPages = sig.getSheets().stream()
+                .flatMap(s -> java.util.stream.Stream.concat(
+                    s.getFrontPages().stream(), s.getBackPages().stream()))
+                .filter(p -> p.getPageType() == PageType.CONTENT
+                          || p.getPageType() == PageType.AESTHETIC)
+                .count();
             return new SignatureRow(
                 sig.getSignatureIndex() + 1,
-                sig.getSheets().size() * 4,
+                (int) contentPages,
                 sig.getSheets().size(),
                 creep,
                 zone);
