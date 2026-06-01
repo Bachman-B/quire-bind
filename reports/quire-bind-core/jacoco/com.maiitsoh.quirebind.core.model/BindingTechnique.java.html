@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BindingTechnique.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">BindingTechnique.java</span></div><h1>BindingTechnique.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+/**
+ * The nine hand-binding techniques supported by Quire.
+ *
+ * &lt;p&gt;Each technique maps to an {@link ImpositionGroup} which governs page count
+ * constraints, padding behaviour, and available imposition layouts.
+ *
+ * @see BindingTechnique#group()
+ */
+<span class="fc" id="L29">public enum BindingTechnique {</span>
+
+    /** Perfect binding — flat spine, pages glued. Group A. */
+<span class="fc" id="L32">    PERFECT_BINDING,</span>
+
+    /** Spiral or coil binding — pages drilled and threaded with a coil. Group A. */
+<span class="fc" id="L35">    SPIRAL,</span>
+
+    /** Japanese stab binding — pages stacked flat and sewn through the spine edge. Group A. */
+<span class="fc" id="L38">    JAPANESE_STAB,</span>
+
+    /** Saddle stitch — all sheets nested and stapled or sewn through the fold. Group B. */
+<span class="fc" id="L41">    SADDLE_STITCH,</span>
+
+    /** Pamphlet — single folded sheet sewn through the fold. Group B. */
+<span class="fc" id="L44">    PAMPHLET,</span>
+
+    /** Booklet — nested sheets folded together. Group B. */
+<span class="fc" id="L47">    BOOKLET,</span>
+
+    /** Sewn signatures — multiple independently sewn signatures assembled into a book block. Group C. */
+<span class="fc" id="L50">    SEWN_SIGNATURES,</span>
+
+    /** Hardcover / case binding — sewn signatures mounted in a hard case. Group C. */
+<span class="fc" id="L53">    HARDCOVER,</span>
+
+    /** Coptic binding — exposed-spine binding sewn through the signatures. Group C. */
+<span class="fc" id="L56">    COPTIC;</span>
+
+    /**
+     * Returns the {@link ImpositionGroup} that governs imposition for this technique.
+     *
+     * @return the imposition group, never null
+     */
+    public ImpositionGroup group() {
+<span class="fc bfc" id="L64" title="All 3 branches covered.">        return switch (this) {</span>
+<span class="fc" id="L65">            case PERFECT_BINDING, SPIRAL, JAPANESE_STAB -&gt; ImpositionGroup.A;</span>
+<span class="fc" id="L66">            case SADDLE_STITCH, PAMPHLET, BOOKLET -&gt; ImpositionGroup.B;</span>
+<span class="fc" id="L67">            case SEWN_SIGNATURES, HARDCOVER, COPTIC -&gt; ImpositionGroup.C;</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

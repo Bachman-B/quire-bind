@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BindingGuide.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Guides</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.guides.model</a> &gt; <span class="el_source">BindingGuide.java</span></div><h1>BindingGuide.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.guides.model;
+
+import java.util.Objects;
+
+/**
+ * An immutable binding guide consisting of YAML-parsed {@link GuideMetadata} and a
+ * raw Markdown body.
+ *
+ * &lt;p&gt;Instances are produced by {@link com.maiitsoh.quirebind.guides.loader.GuideLoader} from the
+ * bundled {@code .md} resources under {@code /guides/}.
+ */
+public final class BindingGuide {
+
+    private final GuideMetadata metadata;
+    private final String body;
+
+    /**
+     * Creates a binding guide.
+     *
+     * @param metadata parsed YAML frontmatter; must not be null
+     * @param body     raw Markdown body (everything after the frontmatter); must not be null
+     */
+<span class="fc" id="L41">    public BindingGuide(GuideMetadata metadata, String body) {</span>
+<span class="fc" id="L42">        this.metadata = Objects.requireNonNull(metadata, &quot;metadata&quot;);</span>
+<span class="fc" id="L43">        this.body = Objects.requireNonNull(body, &quot;body&quot;);</span>
+<span class="fc" id="L44">    }</span>
+
+    /** Returns the parsed metadata from the YAML frontmatter. */
+    public GuideMetadata getMetadata() {
+<span class="fc" id="L48">        return metadata;</span>
+    }
+
+    /** Returns the raw Markdown body of the guide (everything after the frontmatter). */
+    public String getBody() {
+<span class="fc" id="L53">        return body;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (this == obj) {</span>
+<span class="nc" id="L59">            return true;</span>
+        }
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (!(obj instanceof BindingGuide other)) {</span>
+<span class="nc" id="L62">            return false;</span>
+        }
+<span class="nc bnc" id="L64" title="All 4 branches missed.">        return metadata.equals(other.metadata) &amp;&amp; body.equals(other.body);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L69">        return Objects.hash(metadata, body);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L74">        return &quot;BindingGuide{&quot; + metadata + &quot;}&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

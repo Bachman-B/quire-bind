@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownToHtml.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Guides</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.guides.renderer</a> &gt; <span class="el_source">MarkdownToHtml.java</span></div><h1>MarkdownToHtml.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.guides.renderer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Converts a subset of Markdown to HTML sufficient for rendering binding guides.
+ *
+ * &lt;p&gt;Handles: ATX headings (H1–H4), paragraphs, fenced/indented code blocks,
+ * blockquotes (rendered as styled callout boxes), ordered and unordered lists,
+ * horizontal rules, images, inline links, bold, italic, and inline code.
+ *
+ * &lt;p&gt;An optional image resolver maps {@code images/...} src values to data-URI
+ * strings so that classpath resources can be embedded directly in the HTML.
+ */
+public final class MarkdownToHtml {
+
+<span class="fc" id="L39">    private static final Pattern HEADING = Pattern.compile(&quot;^(#{1,4})\\s+(.+?)(?:\\s+\\{#[^}]+})?\\s*$&quot;);</span>
+<span class="fc" id="L40">    private static final Pattern HR = Pattern.compile(&quot;^-{3,}\\s*$&quot;);</span>
+<span class="fc" id="L41">    private static final Pattern UL_ITEM = Pattern.compile(&quot;^[-*+]\\s+(.+)$&quot;);</span>
+<span class="fc" id="L42">    private static final Pattern OL_ITEM = Pattern.compile(&quot;^\\d+\\.\\s+(.+)$&quot;);</span>
+<span class="fc" id="L43">    private static final Pattern BLOCKQUOTE = Pattern.compile(&quot;^&gt;\\s?(.*)$&quot;);</span>
+<span class="fc" id="L44">    private static final Pattern IMAGE = Pattern.compile(&quot;!\\[([^]]*)]\\(([^)]+)\\)&quot;);</span>
+<span class="fc" id="L45">    private static final Pattern LINK = Pattern.compile(&quot;(?&lt;!!)\\[([^]]+)]\\(([^)]+)\\)&quot;);</span>
+<span class="fc" id="L46">    private static final Pattern BOLD = Pattern.compile(&quot;\\*\\*(.+?)\\*\\*&quot;);</span>
+<span class="fc" id="L47">    private static final Pattern ITALIC = Pattern.compile(&quot;(?&lt;![*])\\*([^*]+?)\\*(?![*])&quot;);</span>
+<span class="fc" id="L48">    private static final Pattern CODE_INLINE = Pattern.compile(&quot;`([^`]+)`&quot;);</span>
+    private static final String TIP_PREFIX = &quot;**Tip:**&quot;;
+    private static final String WARN_PREFIX = &quot;**Warning:**&quot;;
+
+    private MarkdownToHtml() {
+    }
+
+    /**
+     * Converts Markdown text to an HTML {@code &lt;body&gt;} fragment.
+     *
+     * @param markdown      the Markdown source; must not be null
+     * @param imageResolver maps {@code src} attribute values to replacement strings
+     *                      (e.g. data URIs); return null to leave the src unchanged
+     * @return the rendered HTML fragment
+     */
+    public static String toHtml(String markdown, Function&lt;String, String&gt; imageResolver) {
+<span class="fc" id="L64">        String[] lines = markdown.split(&quot;\n&quot;, -1);</span>
+<span class="fc" id="L65">        StringBuilder out = new StringBuilder();</span>
+<span class="fc" id="L66">        int i = 0;</span>
+<span class="fc" id="L67">        String listType = null;</span>
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        while (i &lt; lines.length) {</span>
+<span class="fc" id="L70">            String line = lines[i];</span>
+
+            // Heading
+<span class="fc" id="L73">            Matcher hm = HEADING.matcher(line);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            if (hm.matches()) {</span>
+<span class="fc" id="L75">                listType = closeList(out, listType);</span>
+<span class="fc" id="L76">                int level = hm.group(1).length();</span>
+<span class="fc" id="L77">                out.append(&quot;&lt;h&quot;).append(level).append(&quot;&gt;&quot;)</span>
+<span class="fc" id="L78">                   .append(inlineHtml(hm.group(2), imageResolver))</span>
+<span class="fc" id="L79">                   .append(&quot;&lt;/h&quot;).append(level).append(&quot;&gt;\n&quot;);</span>
+<span class="fc" id="L80">                i++;</span>
+<span class="fc" id="L81">                continue;</span>
+            }
+
+            // Horizontal rule
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (HR.matcher(line).matches()) {</span>
+<span class="fc" id="L86">                listType = closeList(out, listType);</span>
+<span class="fc" id="L87">                out.append(&quot;&lt;hr/&gt;\n&quot;);</span>
+<span class="fc" id="L88">                i++;</span>
+<span class="fc" id="L89">                continue;</span>
+            }
+
+            // Blockquote
+<span class="fc" id="L93">            Matcher bqm = BLOCKQUOTE.matcher(line);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (bqm.matches()) {</span>
+<span class="fc" id="L95">                listType = closeList(out, listType);</span>
+<span class="fc" id="L96">                List&lt;String&gt; bqLines = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L97" title="1 of 4 branches missed.">                while (i &lt; lines.length &amp;&amp; BLOCKQUOTE.matcher(lines[i]).matches()) {</span>
+<span class="fc" id="L98">                    bqLines.add(BLOCKQUOTE.matcher(lines[i]).replaceFirst(&quot;$1&quot;));</span>
+<span class="fc" id="L99">                    i++;</span>
+                }
+<span class="fc" id="L101">                String bqBody = String.join(&quot; &quot;, bqLines);</span>
+<span class="fc" id="L102">                String cssClass = &quot;callout&quot;;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                if (bqBody.startsWith(TIP_PREFIX)) {</span>
+<span class="fc" id="L104">                    cssClass = &quot;callout tip&quot;;</span>
+<span class="fc" id="L105">                    bqBody = bqBody.substring(TIP_PREFIX.length()).trim();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                } else if (bqBody.startsWith(WARN_PREFIX)) {</span>
+<span class="fc" id="L107">                    cssClass = &quot;callout warn&quot;;</span>
+<span class="fc" id="L108">                    bqBody = bqBody.substring(WARN_PREFIX.length()).trim();</span>
+                }
+<span class="fc" id="L110">                out.append(&quot;&lt;div class=\&quot;&quot;).append(cssClass).append(&quot;\&quot;&gt;&quot;)</span>
+<span class="fc" id="L111">                   .append(inlineHtml(bqBody, imageResolver))</span>
+<span class="fc" id="L112">                   .append(&quot;&lt;/div&gt;\n&quot;);</span>
+<span class="fc" id="L113">                continue;</span>
+            }
+
+            // Unordered list item
+<span class="fc" id="L117">            Matcher ulm = UL_ITEM.matcher(line);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (ulm.matches()) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                if (!&quot;ul&quot;.equals(listType)) {</span>
+<span class="fc" id="L120">                    listType = closeList(out, listType);</span>
+<span class="fc" id="L121">                    out.append(&quot;&lt;ul&gt;\n&quot;);</span>
+<span class="fc" id="L122">                    listType = &quot;ul&quot;;</span>
+                }
+<span class="fc" id="L124">                out.append(&quot;&lt;li&gt;&quot;).append(inlineHtml(ulm.group(1), imageResolver))</span>
+<span class="fc" id="L125">                   .append(&quot;&lt;/li&gt;\n&quot;);</span>
+<span class="fc" id="L126">                i++;</span>
+<span class="fc" id="L127">                continue;</span>
+            }
+
+            // Ordered list item
+<span class="fc" id="L131">            Matcher olm = OL_ITEM.matcher(line);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (olm.matches()) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                if (!&quot;ol&quot;.equals(listType)) {</span>
+<span class="fc" id="L134">                    listType = closeList(out, listType);</span>
+<span class="fc" id="L135">                    out.append(&quot;&lt;ol&gt;\n&quot;);</span>
+<span class="fc" id="L136">                    listType = &quot;ol&quot;;</span>
+                }
+<span class="fc" id="L138">                out.append(&quot;&lt;li&gt;&quot;).append(inlineHtml(olm.group(1), imageResolver))</span>
+<span class="fc" id="L139">                   .append(&quot;&lt;/li&gt;\n&quot;);</span>
+<span class="fc" id="L140">                i++;</span>
+<span class="fc" id="L141">                continue;</span>
+            }
+
+            // Blank line
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (line.isBlank()) {</span>
+<span class="fc" id="L146">                listType = closeList(out, listType);</span>
+<span class="fc" id="L147">                i++;</span>
+<span class="fc" id="L148">                continue;</span>
+            }
+
+            // Paragraph (collect until blank line or block element)
+<span class="fc" id="L152">            listType = closeList(out, listType);</span>
+<span class="fc" id="L153">            List&lt;String&gt; paraLines = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            while (i &lt; lines.length</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">                    &amp;&amp; !lines[i].isBlank()</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                    &amp;&amp; !HEADING.matcher(lines[i]).matches()</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                    &amp;&amp; !HR.matcher(lines[i]).matches()</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">                    &amp;&amp; !BLOCKQUOTE.matcher(lines[i]).matches()</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">                    &amp;&amp; !UL_ITEM.matcher(lines[i]).matches()</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">                    &amp;&amp; !OL_ITEM.matcher(lines[i]).matches()) {</span>
+<span class="fc" id="L161">                paraLines.add(lines[i]);</span>
+<span class="fc" id="L162">                i++;</span>
+            }
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            if (!paraLines.isEmpty()) {</span>
+<span class="fc" id="L165">                String paraText = String.join(&quot; &quot;, paraLines);</span>
+<span class="fc" id="L166">                out.append(&quot;&lt;p&gt;&quot;).append(inlineHtml(paraText, imageResolver))</span>
+<span class="fc" id="L167">                   .append(&quot;&lt;/p&gt;\n&quot;);</span>
+            }
+<span class="fc" id="L169">        }</span>
+<span class="fc" id="L170">        closeList(out, listType);</span>
+<span class="fc" id="L171">        return out.toString();</span>
+    }
+
+    private static String closeList(StringBuilder out, String listType) {
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (&quot;ul&quot;.equals(listType)) {</span>
+<span class="fc" id="L176">            out.append(&quot;&lt;/ul&gt;\n&quot;);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        } else if (&quot;ol&quot;.equals(listType)) {</span>
+<span class="fc" id="L178">            out.append(&quot;&lt;/ol&gt;\n&quot;);</span>
+        }
+<span class="fc" id="L180">        return null;</span>
+    }
+
+    private static String inlineHtml(String text, Function&lt;String, String&gt; imageResolver) {
+<span class="fc" id="L184">        text = escapeHtml(text);</span>
+        // Images
+<span class="fc" id="L186">        Matcher im = IMAGE.matcher(text);</span>
+<span class="fc" id="L187">        StringBuffer sb = new StringBuffer();</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        while (im.find()) {</span>
+<span class="fc" id="L189">            String alt = im.group(1);</span>
+<span class="fc" id="L190">            String src = im.group(2);</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">            if (imageResolver != null) {</span>
+<span class="fc" id="L192">                String resolved = imageResolver.apply(src);</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">                if (resolved != null) {</span>
+<span class="fc" id="L194">                    src = resolved;</span>
+                }
+            }
+<span class="fc" id="L197">            im.appendReplacement(sb,</span>
+                &quot;&lt;figure&gt;&lt;img src=\&quot;&quot; + src + &quot;\&quot; alt=\&quot;&quot; + alt + &quot;\&quot;/&gt;&quot;
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                + (alt.isBlank() ? &quot;&quot; : &quot;&lt;figcaption&gt;&quot; + alt + &quot;&lt;/figcaption&gt;&quot;)</span>
+                + &quot;&lt;/figure&gt;&quot;);
+<span class="fc" id="L201">        }</span>
+<span class="fc" id="L202">        im.appendTail(sb);</span>
+<span class="fc" id="L203">        text = sb.toString();</span>
+        // Links
+<span class="fc" id="L205">        text = LINK.matcher(text).replaceAll(m -&gt; &quot;&lt;a href=\&quot;&quot; + m.group(2) + &quot;\&quot;&gt;&quot; + m.group(1) + &quot;&lt;/a&gt;&quot;);</span>
+        // Bold
+<span class="fc" id="L207">        text = BOLD.matcher(text).replaceAll(m -&gt; &quot;&lt;strong&gt;&quot; + m.group(1) + &quot;&lt;/strong&gt;&quot;);</span>
+        // Italic
+<span class="fc" id="L209">        text = ITALIC.matcher(text).replaceAll(m -&gt; &quot;&lt;em&gt;&quot; + m.group(1) + &quot;&lt;/em&gt;&quot;);</span>
+        // Inline code
+<span class="fc" id="L211">        text = CODE_INLINE.matcher(text).replaceAll(m -&gt; &quot;&lt;code&gt;&quot; + m.group(1) + &quot;&lt;/code&gt;&quot;);</span>
+<span class="fc" id="L212">        return text;</span>
+    }
+
+    private static String escapeHtml(String text) {
+<span class="fc" id="L216">        return text.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;)</span>
+<span class="fc" id="L217">                   .replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;)</span>
+<span class="fc" id="L218">                   .replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

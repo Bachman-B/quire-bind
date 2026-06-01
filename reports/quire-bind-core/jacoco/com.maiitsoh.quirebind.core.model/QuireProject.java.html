@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuireProject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">QuireProject.java</span></div><h1>QuireProject.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Top-level domain object representing a Quire imposition project.
+ *
+ * &lt;p&gt;The {@link ImpositionGroup} is derived from the chosen {@link BindingTechnique} and cannot
+ * be set independently. All configuration objects are required at build time. The
+ * {@link PageSequence} is mutable and shared by reference; equality uses identity comparison
+ * for that field.
+ */
+public final class QuireProject {
+
+    private final String name;
+    private final BindingTechnique bindingTechnique;
+    private final ImpositionGroup impositionGroup;
+    private final PaperSize paperSize;
+    private final ReadingDirection readingDirection;
+    private final ImpositionLayout layout;
+    private final PageSequence pageSequence;
+    private final PaddingConfig paddingConfig;
+    private final NumberingConfig numberingConfig;
+    private final MarkConfig markConfig;
+    private final CreepConfig creepConfig;
+    private final Optional&lt;Path&gt; outputPath;
+
+<span class="fc" id="L48">    private QuireProject(Builder builder) {</span>
+<span class="fc" id="L49">        this.name = builder.name;</span>
+<span class="fc" id="L50">        this.bindingTechnique = builder.bindingTechnique;</span>
+<span class="fc" id="L51">        this.impositionGroup = builder.bindingTechnique.group();</span>
+<span class="fc" id="L52">        this.paperSize = builder.paperSize;</span>
+<span class="fc" id="L53">        this.readingDirection = builder.readingDirection;</span>
+<span class="fc" id="L54">        this.layout = builder.layout;</span>
+<span class="fc" id="L55">        this.pageSequence = builder.pageSequence;</span>
+<span class="fc" id="L56">        this.paddingConfig = builder.paddingConfig;</span>
+<span class="fc" id="L57">        this.numberingConfig = builder.numberingConfig;</span>
+<span class="fc" id="L58">        this.markConfig = builder.markConfig;</span>
+<span class="fc" id="L59">        this.creepConfig = builder.creepConfig;</span>
+<span class="fc" id="L60">        this.outputPath = builder.outputPath;</span>
+<span class="fc" id="L61">    }</span>
+
+    /** Returns the project name. */
+    public String getName() {
+<span class="fc" id="L65">        return name;</span>
+    }
+
+    /** Returns the binding technique. */
+    public BindingTechnique getBindingTechnique() {
+<span class="fc" id="L70">        return bindingTechnique;</span>
+    }
+
+    /** Returns the imposition group derived from the binding technique. */
+    public ImpositionGroup getImpositionGroup() {
+<span class="fc" id="L75">        return impositionGroup;</span>
+    }
+
+    /** Returns the target paper size. */
+    public PaperSize getPaperSize() {
+<span class="fc" id="L80">        return paperSize;</span>
+    }
+
+    /** Returns the reading direction. */
+    public ReadingDirection getReadingDirection() {
+<span class="fc" id="L85">        return readingDirection;</span>
+    }
+
+    /** Returns the imposition layout (always {@link ImpositionLayout#FOLIO} in Phase 1). */
+    public ImpositionLayout getLayout() {
+<span class="fc" id="L90">        return layout;</span>
+    }
+
+    /** Returns the logical page sequence for this project. */
+    public PageSequence getPageSequence() {
+<span class="fc" id="L95">        return pageSequence;</span>
+    }
+
+    /** Returns the padding configuration. */
+    public PaddingConfig getPaddingConfig() {
+<span class="fc" id="L100">        return paddingConfig;</span>
+    }
+
+    /** Returns the folio numbering configuration. */
+    public NumberingConfig getNumberingConfig() {
+<span class="fc" id="L105">        return numberingConfig;</span>
+    }
+
+    /** Returns the print mark configuration. */
+    public MarkConfig getMarkConfig() {
+<span class="fc" id="L110">        return markConfig;</span>
+    }
+
+    /** Returns the creep configuration. */
+    public CreepConfig getCreepConfig() {
+<span class="fc" id="L115">        return creepConfig;</span>
+    }
+
+    /** Returns the output PDF path, if configured. */
+    public Optional&lt;Path&gt; getOutputPath() {
+<span class="fc" id="L120">        return outputPath;</span>
+    }
+
+    /**
+     * Returns a new builder pre-populated with the values of this instance.
+     * The {@link PageSequence} is shared, not deep-copied.
+     *
+     * @return a builder copying all fields
+     */
+    public Builder toBuilder() {
+<span class="fc" id="L130">        return new Builder()</span>
+<span class="fc" id="L131">                .name(this.name)</span>
+<span class="fc" id="L132">                .bindingTechnique(this.bindingTechnique)</span>
+<span class="fc" id="L133">                .paperSize(this.paperSize)</span>
+<span class="fc" id="L134">                .readingDirection(this.readingDirection)</span>
+<span class="fc" id="L135">                .layout(this.layout)</span>
+<span class="fc" id="L136">                .pageSequence(this.pageSequence)</span>
+<span class="fc" id="L137">                .paddingConfig(this.paddingConfig)</span>
+<span class="fc" id="L138">                .numberingConfig(this.numberingConfig)</span>
+<span class="fc" id="L139">                .markConfig(this.markConfig)</span>
+<span class="fc" id="L140">                .creepConfig(this.creepConfig)</span>
+<span class="fc" id="L141">                .outputPath(this.outputPath.orElse(null));</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L146">        return new Builder();</span>
+    }
+
+    /** Builder for {@link QuireProject}. */
+    public static final class Builder {
+
+        private String name;
+        private BindingTechnique bindingTechnique;
+        private PaperSize paperSize;
+<span class="fc" id="L155">        private ReadingDirection readingDirection = ReadingDirection.LTR;</span>
+<span class="fc" id="L156">        private ImpositionLayout layout = ImpositionLayout.FOLIO;</span>
+        private PageSequence pageSequence;
+        private PaddingConfig paddingConfig;
+        private NumberingConfig numberingConfig;
+        private MarkConfig markConfig;
+        private CreepConfig creepConfig;
+<span class="fc" id="L162">        private Optional&lt;Path&gt; outputPath = Optional.empty();</span>
+
+<span class="fc" id="L164">        private Builder() {</span>
+<span class="fc" id="L165">        }</span>
+
+        /**
+         * Sets the project name.
+         *
+         * @param name must not be null or blank
+         * @return this builder
+         */
+        public Builder name(String name) {
+<span class="fc bfc" id="L174" title="All 4 branches covered.">            if (name == null || name.isBlank()) {</span>
+<span class="fc" id="L175">                throw new IllegalArgumentException(&quot;name must not be null or blank&quot;);</span>
+            }
+<span class="fc" id="L177">            this.name = name;</span>
+<span class="fc" id="L178">            return this;</span>
+        }
+
+        /**
+         * Sets the binding technique. The imposition group is derived from this value.
+         *
+         * @param bindingTechnique must not be null
+         * @return this builder
+         */
+        public Builder bindingTechnique(BindingTechnique bindingTechnique) {
+<span class="fc" id="L188">            this.bindingTechnique = Objects.requireNonNull(bindingTechnique, &quot;bindingTechnique&quot;);</span>
+<span class="fc" id="L189">            return this;</span>
+        }
+
+        /**
+         * Sets the paper size.
+         *
+         * @param paperSize must not be null
+         * @return this builder
+         */
+        public Builder paperSize(PaperSize paperSize) {
+<span class="fc" id="L199">            this.paperSize = Objects.requireNonNull(paperSize, &quot;paperSize&quot;);</span>
+<span class="fc" id="L200">            return this;</span>
+        }
+
+        /**
+         * Sets the reading direction.
+         *
+         * @param readingDirection must not be null
+         * @return this builder
+         */
+        public Builder readingDirection(ReadingDirection readingDirection) {
+<span class="fc" id="L210">            this.readingDirection = Objects.requireNonNull(readingDirection, &quot;readingDirection&quot;);</span>
+<span class="fc" id="L211">            return this;</span>
+        }
+
+        /**
+         * Sets the imposition layout. Phase 1 always uses {@link ImpositionLayout#FOLIO}.
+         *
+         * @param layout must not be null
+         * @return this builder
+         */
+        public Builder layout(ImpositionLayout layout) {
+<span class="fc" id="L221">            this.layout = Objects.requireNonNull(layout, &quot;layout&quot;);</span>
+<span class="fc" id="L222">            return this;</span>
+        }
+
+        /**
+         * Sets the page sequence.
+         *
+         * @param pageSequence must not be null
+         * @return this builder
+         */
+        public Builder pageSequence(PageSequence pageSequence) {
+<span class="fc" id="L232">            this.pageSequence = Objects.requireNonNull(pageSequence, &quot;pageSequence&quot;);</span>
+<span class="fc" id="L233">            return this;</span>
+        }
+
+        /**
+         * Sets the padding configuration.
+         *
+         * @param paddingConfig must not be null
+         * @return this builder
+         */
+        public Builder paddingConfig(PaddingConfig paddingConfig) {
+<span class="fc" id="L243">            this.paddingConfig = Objects.requireNonNull(paddingConfig, &quot;paddingConfig&quot;);</span>
+<span class="fc" id="L244">            return this;</span>
+        }
+
+        /**
+         * Sets the numbering configuration.
+         *
+         * @param numberingConfig must not be null
+         * @return this builder
+         */
+        public Builder numberingConfig(NumberingConfig numberingConfig) {
+<span class="fc" id="L254">            this.numberingConfig = Objects.requireNonNull(numberingConfig, &quot;numberingConfig&quot;);</span>
+<span class="fc" id="L255">            return this;</span>
+        }
+
+        /**
+         * Sets the mark configuration.
+         *
+         * @param markConfig must not be null
+         * @return this builder
+         */
+        public Builder markConfig(MarkConfig markConfig) {
+<span class="fc" id="L265">            this.markConfig = Objects.requireNonNull(markConfig, &quot;markConfig&quot;);</span>
+<span class="fc" id="L266">            return this;</span>
+        }
+
+        /**
+         * Sets the creep configuration.
+         *
+         * @param creepConfig must not be null
+         * @return this builder
+         */
+        public Builder creepConfig(CreepConfig creepConfig) {
+<span class="fc" id="L276">            this.creepConfig = Objects.requireNonNull(creepConfig, &quot;creepConfig&quot;);</span>
+<span class="fc" id="L277">            return this;</span>
+        }
+
+        /**
+         * Sets the output path, or null to clear.
+         *
+         * @param outputPath the output file path, or null
+         * @return this builder
+         */
+        public Builder outputPath(Path outputPath) {
+<span class="fc" id="L287">            this.outputPath = Optional.ofNullable(outputPath);</span>
+<span class="fc" id="L288">            return this;</span>
+        }
+
+        /**
+         * Builds the {@link QuireProject}.
+         *
+         * @return a new immutable instance
+         * @throws NullPointerException     if any required field is not set
+         * @throws IllegalArgumentException if name is blank
+         */
+        public QuireProject build() {
+<span class="fc" id="L299">            Objects.requireNonNull(name, &quot;name must be set&quot;);</span>
+<span class="fc" id="L300">            Objects.requireNonNull(bindingTechnique, &quot;bindingTechnique must be set&quot;);</span>
+<span class="fc" id="L301">            Objects.requireNonNull(paperSize, &quot;paperSize must be set&quot;);</span>
+<span class="fc" id="L302">            Objects.requireNonNull(readingDirection, &quot;readingDirection must be set&quot;);</span>
+<span class="fc" id="L303">            Objects.requireNonNull(layout, &quot;layout must be set&quot;);</span>
+<span class="fc" id="L304">            Objects.requireNonNull(pageSequence, &quot;pageSequence must be set&quot;);</span>
+<span class="fc" id="L305">            Objects.requireNonNull(paddingConfig, &quot;paddingConfig must be set&quot;);</span>
+<span class="fc" id="L306">            Objects.requireNonNull(numberingConfig, &quot;numberingConfig must be set&quot;);</span>
+<span class="fc" id="L307">            Objects.requireNonNull(markConfig, &quot;markConfig must be set&quot;);</span>
+<span class="fc" id="L308">            Objects.requireNonNull(creepConfig, &quot;creepConfig must be set&quot;);</span>
+<span class="fc" id="L309">            return new QuireProject(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L316">            return true;</span>
+        }
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (!(obj instanceof QuireProject other)) {</span>
+<span class="fc" id="L319">            return false;</span>
+        }
+<span class="fc bfc" id="L321" title="All 12 branches covered.">        return name.equals(other.name)</span>
+                &amp;&amp; bindingTechnique == other.bindingTechnique
+                &amp;&amp; paperSize == other.paperSize
+                &amp;&amp; readingDirection == other.readingDirection
+                &amp;&amp; layout == other.layout
+                &amp;&amp; pageSequence == other.pageSequence
+<span class="fc bfc" id="L327" title="All 2 branches covered.">                &amp;&amp; paddingConfig.equals(other.paddingConfig)</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                &amp;&amp; numberingConfig.equals(other.numberingConfig)</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">                &amp;&amp; markConfig.equals(other.markConfig)</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">                &amp;&amp; creepConfig.equals(other.creepConfig)</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">                &amp;&amp; outputPath.equals(other.outputPath);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L336">        return Objects.hash(name, bindingTechnique, paperSize, readingDirection, layout,</span>
+<span class="fc" id="L337">                System.identityHashCode(pageSequence),</span>
+                paddingConfig, numberingConfig, markConfig, creepConfig, outputPath);
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L343">        return &quot;QuireProject{&quot;</span>
+                + &quot;name='&quot; + name + '\''
+                + &quot;, bindingTechnique=&quot; + bindingTechnique
+                + &quot;, impositionGroup=&quot; + impositionGroup
+                + &quot;, paperSize=&quot; + paperSize
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

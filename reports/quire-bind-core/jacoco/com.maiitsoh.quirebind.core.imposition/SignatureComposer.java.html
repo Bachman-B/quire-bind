@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SignatureComposer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.imposition</a> &gt; <span class="el_source">SignatureComposer.java</span></div><h1>SignatureComposer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.imposition;
+
+import com.maiitsoh.quirebind.core.model.ImposedSheet;
+import com.maiitsoh.quirebind.core.model.ImpositionGroup;
+import com.maiitsoh.quirebind.core.model.ImpositionLayout;
+import com.maiitsoh.quirebind.core.model.QuirePage;
+import com.maiitsoh.quirebind.core.model.ReadingDirection;
+import com.maiitsoh.quirebind.core.model.Signature;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Folds a flat, numbered page list into {@link Signature} objects using FOLIO imposition.
+ *
+ * &lt;p&gt;Only {@link ImpositionLayout#FOLIO} is supported in Phase 1. Requesting
+ * {@link ImpositionLayout#QUARTO} or {@link ImpositionLayout#OCTAVO} throws
+ * {@link UnsupportedOperationException}.
+ *
+ * &lt;h3&gt;FOLIO imposition formula (0-based sheet index {@code i}, N pages per signature)&lt;/h3&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;LTR — front: [pages[N-1-2i], pages[2i]], back: [pages[2i+1], pages[N-2-2i]]&lt;/li&gt;
+ *   &lt;li&gt;RTL — front: [pages[2i], pages[N-1-2i]], back: [pages[N-2-2i], pages[2i+1]]&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public final class SignatureComposer {
+
+    private SignatureComposer() {
+    }
+
+    /**
+     * Composes signatures from a numbered, padded page list.
+     *
+     * @param pages         numbered pages; total count must be divisible by 4 (group A or B) or
+     *                      by {@code 4 × signatureSize} (group C); must not be null
+     * @param group         imposition group; must not be null
+     * @param layout        imposition layout; must not be null; only FOLIO is supported
+     * @param signatureSize sheets per signature (ignored for groups A and B); must be positive
+     * @param direction     reading direction; must not be null
+     * @return an immutable list of {@link Signature} objects
+     * @throws UnsupportedOperationException if layout is not {@link ImpositionLayout#FOLIO}
+     */
+    public static List&lt;Signature&gt; compose(
+            List&lt;QuirePage&gt; pages,
+            ImpositionGroup group,
+            ImpositionLayout layout,
+            int signatureSize,
+            ReadingDirection direction) {
+<span class="fc" id="L68">        Objects.requireNonNull(pages, &quot;pages&quot;);</span>
+<span class="fc" id="L69">        Objects.requireNonNull(group, &quot;group&quot;);</span>
+<span class="fc" id="L70">        Objects.requireNonNull(layout, &quot;layout&quot;);</span>
+<span class="fc" id="L71">        Objects.requireNonNull(direction, &quot;direction&quot;);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (layout != ImpositionLayout.FOLIO) {</span>
+<span class="fc" id="L73">            throw new UnsupportedOperationException(</span>
+                    &quot;Layout &quot; + layout + &quot; is not supported in Phase 1&quot;);
+        }
+
+<span class="fc" id="L77">        int pagesPerSig = pagesPerSignature(group, signatureSize, pages.size());</span>
+<span class="fc" id="L78">        int sigCount = pages.size() / pagesPerSig;</span>
+<span class="fc" id="L79">        List&lt;Signature&gt; signatures = new ArrayList&lt;&gt;(sigCount);</span>
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int s = 0; s &lt; sigCount; s++) {</span>
+<span class="fc" id="L82">            List&lt;QuirePage&gt; sigPages = pages.subList(s * pagesPerSig, (s + 1) * pagesPerSig);</span>
+<span class="fc" id="L83">            signatures.add(buildSignature(s, sigPages, direction));</span>
+        }
+
+<span class="fc" id="L86">        return List.copyOf(signatures);</span>
+    }
+
+    private static int pagesPerSignature(ImpositionGroup group, int signatureSize, int total) {
+<span class="fc bfc" id="L90" title="All 3 branches covered.">        return switch (group) {</span>
+<span class="fc" id="L91">            case A -&gt; 4;</span>
+<span class="fc" id="L92">            case B -&gt; total;</span>
+<span class="fc" id="L93">            case C -&gt; signatureSize * 4;</span>
+        };
+    }
+
+    private static Signature buildSignature(
+            int sigIndex, List&lt;QuirePage&gt; sigPages, ReadingDirection dir) {
+<span class="fc" id="L99">        int n = sigPages.size();</span>
+<span class="fc" id="L100">        int sheetCount = n / 4;</span>
+<span class="fc" id="L101">        List&lt;ImposedSheet&gt; sheets = new ArrayList&lt;&gt;(sheetCount);</span>
+<span class="fc" id="L102">        List&lt;Integer&gt; logicalNumbers = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (QuirePage p : sigPages) {</span>
+<span class="fc" id="L105">            p.getLogicalPageNumber().ifPresent(logicalNumbers::add);</span>
+<span class="fc" id="L106">        }</span>
+
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (int i = 0; i &lt; sheetCount; i++) {</span>
+            List&lt;QuirePage&gt; front;
+            List&lt;QuirePage&gt; back;
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (dir == ReadingDirection.LTR) {</span>
+<span class="fc" id="L112">                front = List.of(sigPages.get(n - 1 - 2 * i), sigPages.get(2 * i));</span>
+<span class="fc" id="L113">                back = List.of(sigPages.get(2 * i + 1), sigPages.get(n - 2 - 2 * i));</span>
+            } else {
+<span class="fc" id="L115">                front = List.of(sigPages.get(2 * i), sigPages.get(n - 1 - 2 * i));</span>
+<span class="fc" id="L116">                back = List.of(sigPages.get(n - 2 - 2 * i), sigPages.get(2 * i + 1));</span>
+            }
+<span class="fc" id="L118">            sheets.add(ImposedSheet.builder()</span>
+<span class="fc" id="L119">                    .sheetIndex(i)</span>
+<span class="fc" id="L120">                    .signatureIndex(sigIndex)</span>
+<span class="fc" id="L121">                    .frontPages(front)</span>
+<span class="fc" id="L122">                    .backPages(back)</span>
+<span class="fc" id="L123">                    .build());</span>
+        }
+
+<span class="fc" id="L126">        return Signature.builder()</span>
+<span class="fc" id="L127">                .signatureIndex(sigIndex)</span>
+<span class="fc" id="L128">                .sheets(sheets)</span>
+<span class="fc" id="L129">                .logicalPageNumbers(logicalNumbers)</span>
+<span class="fc" id="L130">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

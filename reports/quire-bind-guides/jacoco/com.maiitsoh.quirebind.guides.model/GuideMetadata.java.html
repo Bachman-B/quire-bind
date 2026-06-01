@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GuideMetadata.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Guides</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.guides.model</a> &gt; <span class="el_source">GuideMetadata.java</span></div><h1>GuideMetadata.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.guides.model;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Immutable metadata parsed from the YAML frontmatter of a binding guide file.
+ *
+ * &lt;p&gt;Fields map directly to the frontmatter keys defined in the guide format:
+ * &lt;pre&gt;
+ * quire_guide_version: &quot;1.0&quot;
+ * technique_id: saddle_stitch
+ * locale: en
+ * title: &quot;Saddle stitch&quot;
+ * ...
+ * &lt;/pre&gt;
+ */
+public final class GuideMetadata {
+
+    private final String quireGuideVersion;
+    private final String techniqueId;
+    private final String locale;
+    private final String title;
+    private final String subtitle;
+    private final String group;
+    private final String difficulty;
+    private final String timeEstimate;
+    private final String schematicDescription;
+    private final List&lt;String&gt; tools;
+    private final List&lt;String&gt; materials;
+    private final List&lt;String&gt; readingDirectionsSupported;
+    private final List&lt;String&gt; relatedTechniques;
+    private final List&lt;GuideSection&gt; sections;
+
+<span class="fc" id="L53">    private GuideMetadata(Builder builder) {</span>
+<span class="fc" id="L54">        this.quireGuideVersion = builder.quireGuideVersion;</span>
+<span class="fc" id="L55">        this.techniqueId = builder.techniqueId;</span>
+<span class="fc" id="L56">        this.locale = builder.locale;</span>
+<span class="fc" id="L57">        this.title = builder.title;</span>
+<span class="fc" id="L58">        this.subtitle = builder.subtitle;</span>
+<span class="fc" id="L59">        this.group = builder.group;</span>
+<span class="fc" id="L60">        this.difficulty = builder.difficulty;</span>
+<span class="fc" id="L61">        this.timeEstimate = builder.timeEstimate;</span>
+<span class="fc" id="L62">        this.schematicDescription = builder.schematicDescription;</span>
+<span class="fc" id="L63">        this.tools = List.copyOf(builder.tools);</span>
+<span class="fc" id="L64">        this.materials = List.copyOf(builder.materials);</span>
+<span class="fc" id="L65">        this.readingDirectionsSupported = List.copyOf(builder.readingDirectionsSupported);</span>
+<span class="fc" id="L66">        this.relatedTechniques = List.copyOf(builder.relatedTechniques);</span>
+<span class="fc" id="L67">        this.sections = List.copyOf(builder.sections);</span>
+<span class="fc" id="L68">    }</span>
+
+    /** Returns the guide format version (e.g. {@code &quot;1.0&quot;}). */
+    public String getQuireGuideVersion() {
+<span class="nc" id="L72">        return quireGuideVersion;</span>
+    }
+
+    /** Returns the binding technique identifier (e.g. {@code saddle_stitch}). */
+    public String getTechniqueId() {
+<span class="fc" id="L77">        return techniqueId;</span>
+    }
+
+    /** Returns the BCP 47 locale tag (e.g. {@code en}). */
+    public String getLocale() {
+<span class="fc" id="L82">        return locale;</span>
+    }
+
+    /** Returns the display title of the guide. */
+    public String getTitle() {
+<span class="fc" id="L87">        return title;</span>
+    }
+
+    /** Returns the subtitle, or an empty string if absent. */
+    public String getSubtitle() {
+<span class="nc" id="L92">        return subtitle;</span>
+    }
+
+    /** Returns the imposition group letter ({@code A}, {@code B}, or {@code C}). */
+    public String getGroup() {
+<span class="fc" id="L97">        return group;</span>
+    }
+
+    /** Returns the difficulty level (e.g. {@code beginner}, {@code intermediate}). */
+    public String getDifficulty() {
+<span class="nc" id="L102">        return difficulty;</span>
+    }
+
+    /** Returns the estimated time to complete the binding (e.g. {@code &quot;30–60 minutes&quot;}). */
+    public String getTimeEstimate() {
+<span class="nc" id="L107">        return timeEstimate;</span>
+    }
+
+    /** Returns a short description of the schematic illustration. */
+    public String getSchematicDescription() {
+<span class="nc" id="L112">        return schematicDescription;</span>
+    }
+
+    /** Returns the list of tools required. */
+    public List&lt;String&gt; getTools() {
+<span class="fc" id="L117">        return tools;</span>
+    }
+
+    /** Returns the list of materials required. */
+    public List&lt;String&gt; getMaterials() {
+<span class="fc" id="L122">        return materials;</span>
+    }
+
+    /** Returns the supported reading directions (e.g. {@code [&quot;ltr&quot;, &quot;rtl&quot;]}). */
+    public List&lt;String&gt; getReadingDirectionsSupported() {
+<span class="fc" id="L127">        return readingDirectionsSupported;</span>
+    }
+
+    /** Returns the technique IDs of related binding methods. */
+    public List&lt;String&gt; getRelatedTechniques() {
+<span class="fc" id="L132">        return relatedTechniques;</span>
+    }
+
+    /** Returns the ordered list of navigable sections in this guide. */
+    public List&lt;GuideSection&gt; getSections() {
+<span class="fc" id="L137">        return sections;</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L142">        return new Builder();</span>
+    }
+
+    /** Builder for {@link GuideMetadata}. */
+    public static final class Builder {
+
+<span class="fc" id="L148">        private String quireGuideVersion = &quot;&quot;;</span>
+<span class="fc" id="L149">        private String techniqueId = &quot;&quot;;</span>
+<span class="fc" id="L150">        private String locale = &quot;&quot;;</span>
+<span class="fc" id="L151">        private String title = &quot;&quot;;</span>
+<span class="fc" id="L152">        private String subtitle = &quot;&quot;;</span>
+<span class="fc" id="L153">        private String group = &quot;&quot;;</span>
+<span class="fc" id="L154">        private String difficulty = &quot;&quot;;</span>
+<span class="fc" id="L155">        private String timeEstimate = &quot;&quot;;</span>
+<span class="fc" id="L156">        private String schematicDescription = &quot;&quot;;</span>
+<span class="fc" id="L157">        private List&lt;String&gt; tools = List.of();</span>
+<span class="fc" id="L158">        private List&lt;String&gt; materials = List.of();</span>
+<span class="fc" id="L159">        private List&lt;String&gt; readingDirectionsSupported = List.of();</span>
+<span class="fc" id="L160">        private List&lt;String&gt; relatedTechniques = List.of();</span>
+<span class="fc" id="L161">        private List&lt;GuideSection&gt; sections = List.of();</span>
+
+<span class="fc" id="L163">        private Builder() {</span>
+<span class="fc" id="L164">        }</span>
+
+        /** Sets {@code quire_guide_version}. */
+        public Builder quireGuideVersion(String v) {
+<span class="fc" id="L168">            this.quireGuideVersion = Objects.requireNonNullElse(v, &quot;&quot;);</span>
+<span class="fc" id="L169">            return this;</span>
+        }
+
+        /** Sets {@code technique_id}. */
+        public Builder techniqueId(String id) {
+<span class="fc" id="L174">            this.techniqueId = Objects.requireNonNullElse(id, &quot;&quot;);</span>
+<span class="fc" id="L175">            return this;</span>
+        }
+
+        /** Sets {@code locale}. */
+        public Builder locale(String locale) {
+<span class="fc" id="L180">            this.locale = Objects.requireNonNullElse(locale, &quot;&quot;);</span>
+<span class="fc" id="L181">            return this;</span>
+        }
+
+        /** Sets {@code title}. */
+        public Builder title(String title) {
+<span class="fc" id="L186">            this.title = Objects.requireNonNullElse(title, &quot;&quot;);</span>
+<span class="fc" id="L187">            return this;</span>
+        }
+
+        /** Sets {@code subtitle}. */
+        public Builder subtitle(String subtitle) {
+<span class="fc" id="L192">            this.subtitle = Objects.requireNonNullElse(subtitle, &quot;&quot;);</span>
+<span class="fc" id="L193">            return this;</span>
+        }
+
+        /** Sets {@code group}. */
+        public Builder group(String group) {
+<span class="fc" id="L198">            this.group = Objects.requireNonNullElse(group, &quot;&quot;);</span>
+<span class="fc" id="L199">            return this;</span>
+        }
+
+        /** Sets {@code difficulty}. */
+        public Builder difficulty(String difficulty) {
+<span class="fc" id="L204">            this.difficulty = Objects.requireNonNullElse(difficulty, &quot;&quot;);</span>
+<span class="fc" id="L205">            return this;</span>
+        }
+
+        /** Sets {@code time_estimate}. */
+        public Builder timeEstimate(String timeEstimate) {
+<span class="fc" id="L210">            this.timeEstimate = Objects.requireNonNullElse(timeEstimate, &quot;&quot;);</span>
+<span class="fc" id="L211">            return this;</span>
+        }
+
+        /** Sets {@code schematic_description}. */
+        public Builder schematicDescription(String desc) {
+<span class="fc" id="L216">            this.schematicDescription = Objects.requireNonNullElse(desc, &quot;&quot;);</span>
+<span class="fc" id="L217">            return this;</span>
+        }
+
+        /** Sets {@code tools}. */
+        public Builder tools(List&lt;String&gt; tools) {
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            this.tools = tools != null ? tools : List.of();</span>
+<span class="fc" id="L223">            return this;</span>
+        }
+
+        /** Sets {@code materials}. */
+        public Builder materials(List&lt;String&gt; materials) {
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">            this.materials = materials != null ? materials : List.of();</span>
+<span class="fc" id="L229">            return this;</span>
+        }
+
+        /** Sets {@code reading_directions_supported}. */
+        public Builder readingDirectionsSupported(List&lt;String&gt; dirs) {
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">            this.readingDirectionsSupported = dirs != null ? dirs : List.of();</span>
+<span class="fc" id="L235">            return this;</span>
+        }
+
+        /** Sets {@code related_techniques}. */
+        public Builder relatedTechniques(List&lt;String&gt; techniques) {
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            this.relatedTechniques = techniques != null ? techniques : List.of();</span>
+<span class="fc" id="L241">            return this;</span>
+        }
+
+        /** Sets {@code sections}. */
+        public Builder sections(List&lt;GuideSection&gt; sections) {
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">            this.sections = sections != null ? sections : List.of();</span>
+<span class="fc" id="L247">            return this;</span>
+        }
+
+        /** Builds the {@link GuideMetadata}. */
+        public GuideMetadata build() {
+<span class="fc" id="L252">            return new GuideMetadata(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (this == obj) {</span>
+<span class="nc" id="L259">            return true;</span>
+        }
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        if (!(obj instanceof GuideMetadata other)) {</span>
+<span class="nc" id="L262">            return false;</span>
+        }
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        return techniqueId.equals(other.techniqueId)</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">                &amp;&amp; locale.equals(other.locale)</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">                &amp;&amp; title.equals(other.title);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L271">        return Objects.hash(techniqueId, locale, title);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L276">        return &quot;GuideMetadata{techniqueId='&quot; + techniqueId + &quot;', locale='&quot; + locale</span>
+                + &quot;', title='&quot; + title + &quot;'}&quot;;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GuideValidator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Guides</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.guides.validator</a> &gt; <span class="el_source">GuideValidator.java</span></div><h1>GuideValidator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.guides.validator;
+
+import com.maiitsoh.quirebind.core.model.BindingTechnique;
+import com.maiitsoh.quirebind.guides.model.BindingGuide;
+import com.maiitsoh.quirebind.guides.model.GuideMetadata;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Validates a {@link BindingGuide} for structural completeness.
+ *
+ * &lt;p&gt;A guide is valid when:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code techniqueId} is non-blank and matches a known {@link BindingTechnique}&lt;/li&gt;
+ *   &lt;li&gt;{@code locale} is non-blank&lt;/li&gt;
+ *   &lt;li&gt;{@code title} is non-blank&lt;/li&gt;
+ *   &lt;li&gt;The {@code sections} list is non-empty&lt;/li&gt;
+ *   &lt;li&gt;The Markdown {@code body} is non-blank&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public final class GuideValidator {
+
+    private GuideValidator() {
+    }
+
+    /**
+     * Validates the given guide and returns a report of any issues found.
+     *
+     * @param guide the guide to validate; must not be null
+     * @return a {@link ValidationReport} describing whether the guide is valid
+     */
+    public static ValidationReport validate(BindingGuide guide) {
+<span class="fc" id="L54">        Objects.requireNonNull(guide, &quot;guide&quot;);</span>
+<span class="fc" id="L55">        List&lt;String&gt; issues = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L56">        GuideMetadata m = guide.getMetadata();</span>
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (m.getTechniqueId().isBlank()) {</span>
+<span class="fc" id="L59">            issues.add(&quot;techniqueId is blank&quot;);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        } else if (!isKnownTechnique(m.getTechniqueId())) {</span>
+<span class="fc" id="L61">            issues.add(&quot;unknown techniqueId: '&quot; + m.getTechniqueId() + &quot;'&quot;);</span>
+        }
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (m.getLocale().isBlank()) {</span>
+<span class="fc" id="L64">            issues.add(&quot;locale is blank&quot;);</span>
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (m.getTitle().isBlank()) {</span>
+<span class="fc" id="L67">            issues.add(&quot;title is blank&quot;);</span>
+        }
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (m.getSections().isEmpty()) {</span>
+<span class="fc" id="L70">            issues.add(&quot;sections list is empty&quot;);</span>
+        }
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (guide.getBody().isBlank()) {</span>
+<span class="fc" id="L73">            issues.add(&quot;markdown body is blank&quot;);</span>
+        }
+
+<span class="fc" id="L76">        return new ValidationReport(issues.isEmpty(), List.copyOf(issues));</span>
+    }
+
+    private static boolean isKnownTechnique(String techniqueId) {
+<span class="fc" id="L80">        return Arrays.stream(BindingTechnique.values())</span>
+<span class="fc" id="L81">                .anyMatch(bt -&gt; bt.name().equalsIgnoreCase(techniqueId));</span>
+    }
+
+    /**
+     * The result of validating a {@link BindingGuide}.
+     *
+     * @param valid  {@code true} if no issues were found
+     * @param issues an unmodifiable list of human-readable issue descriptions
+     */
+<span class="fc" id="L90">    public record ValidationReport(boolean valid, List&lt;String&gt; issues) {</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

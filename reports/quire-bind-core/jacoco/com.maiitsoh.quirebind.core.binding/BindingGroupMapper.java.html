@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BindingGroupMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.binding</a> &gt; <span class="el_source">BindingGroupMapper.java</span></div><h1>BindingGroupMapper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.binding;
+
+import com.maiitsoh.quirebind.core.model.BindingTechnique;
+import com.maiitsoh.quirebind.core.model.ImpositionGroup;
+
+import java.util.Objects;
+
+/**
+ * Maps a {@link BindingTechnique} to its {@link ImpositionGroup}.
+ *
+ * &lt;p&gt;Delegates to {@link BindingTechnique#group()} so that service and UI layers
+ * depend on a named collaborator rather than calling a domain-enum method directly.
+ */
+public final class BindingGroupMapper {
+
+    private BindingGroupMapper() {
+    }
+
+    /**
+     * Returns the imposition group for the given binding technique.
+     *
+     * @param technique must not be null
+     * @return the corresponding imposition group
+     * @throws IllegalArgumentException if technique is null
+     */
+    public static ImpositionGroup groupFor(BindingTechnique technique) {
+<span class="fc" id="L45">        Objects.requireNonNull(technique, &quot;technique must not be null&quot;);</span>
+<span class="fc" id="L46">        return technique.group();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

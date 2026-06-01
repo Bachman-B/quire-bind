@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">MarkConfig.java</span></div><h1>MarkConfig.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Controls which print marks are added to the imposed output.
+ */
+public final class MarkConfig {
+
+    private final boolean foldLines;
+    private final boolean signatureProofMarkers;
+    private final boolean trimLines;
+    private final boolean sewingHoles;
+    private final Optional&lt;SewingConfig&gt; sewingConfig;
+
+<span class="fc" id="L35">    private MarkConfig(Builder builder) {</span>
+<span class="fc" id="L36">        this.foldLines = builder.foldLines;</span>
+<span class="fc" id="L37">        this.signatureProofMarkers = builder.signatureProofMarkers;</span>
+<span class="fc" id="L38">        this.trimLines = builder.trimLines;</span>
+<span class="fc" id="L39">        this.sewingHoles = builder.sewingHoles;</span>
+<span class="fc" id="L40">        this.sewingConfig = builder.sewingConfig;</span>
+<span class="fc" id="L41">    }</span>
+
+    /** Returns true if fold line overlays are added to each imposed sheet. */
+    public boolean isFoldLines() {
+<span class="fc" id="L45">        return foldLines;</span>
+    }
+
+    /**
+     * Returns true if signature proof markers are added to the spine edge of each signature.
+     * Markers are staggered so that a misorder or missing signature breaks the diagonal.
+     */
+    public boolean isSignatureProofMarkers() {
+<span class="fc" id="L53">        return signatureProofMarkers;</span>
+    }
+
+    /**
+     * Returns true if trim line marks are added. Always false in Phase 1.
+     */
+    public boolean isTrimLines() {
+<span class="fc" id="L60">        return trimLines;</span>
+    }
+
+    /**
+     * Returns true if sewing hole marks are added. Always false in Phase 1;
+     * configurable in Phase 2.
+     */
+    public boolean isSewingHoles() {
+<span class="fc" id="L68">        return sewingHoles;</span>
+    }
+
+    /**
+     * Returns the sewing configuration. Always empty in Phase 1.
+     * Populated in Phase 2 when {@link #isSewingHoles()} is true.
+     */
+    public Optional&lt;SewingConfig&gt; getSewingConfig() {
+<span class="fc" id="L76">        return sewingConfig;</span>
+    }
+
+    /**
+     * Returns a new builder pre-populated with the values of this instance.
+     *
+     * @return a builder copying all fields from this instance
+     */
+    public Builder toBuilder() {
+<span class="fc" id="L85">        return new Builder()</span>
+<span class="fc" id="L86">                .foldLines(this.foldLines)</span>
+<span class="fc" id="L87">                .signatureProofMarkers(this.signatureProofMarkers)</span>
+<span class="fc" id="L88">                .trimLines(this.trimLines)</span>
+<span class="fc" id="L89">                .sewingHoles(this.sewingHoles)</span>
+<span class="fc" id="L90">                .sewingConfig(this.sewingConfig.orElse(null));</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L95">        return new Builder();</span>
+    }
+
+    /** Builder for {@link MarkConfig}. */
+    public static final class Builder {
+
+<span class="fc" id="L101">        private boolean foldLines = false;</span>
+<span class="fc" id="L102">        private boolean signatureProofMarkers = false;</span>
+<span class="fc" id="L103">        private boolean trimLines = false;</span>
+<span class="fc" id="L104">        private boolean sewingHoles = false;</span>
+<span class="fc" id="L105">        private Optional&lt;SewingConfig&gt; sewingConfig = Optional.empty();</span>
+
+<span class="fc" id="L107">        private Builder() {</span>
+<span class="fc" id="L108">        }</span>
+
+        /**
+         * Sets whether fold line overlays are added.
+         *
+         * @param foldLines true to add fold lines
+         * @return this builder
+         */
+        public Builder foldLines(boolean foldLines) {
+<span class="fc" id="L117">            this.foldLines = foldLines;</span>
+<span class="fc" id="L118">            return this;</span>
+        }
+
+        /**
+         * Sets whether signature proof markers are added.
+         *
+         * @param signatureProofMarkers true to add proof markers
+         * @return this builder
+         */
+        public Builder signatureProofMarkers(boolean signatureProofMarkers) {
+<span class="fc" id="L128">            this.signatureProofMarkers = signatureProofMarkers;</span>
+<span class="fc" id="L129">            return this;</span>
+        }
+
+        /**
+         * Sets whether trim line marks are added. Phase 1 always passes false.
+         *
+         * @param trimLines true to add trim lines
+         * @return this builder
+         */
+        public Builder trimLines(boolean trimLines) {
+<span class="fc" id="L139">            this.trimLines = trimLines;</span>
+<span class="fc" id="L140">            return this;</span>
+        }
+
+        /**
+         * Sets whether sewing hole marks are added. Phase 1 always passes false.
+         *
+         * @param sewingHoles true to add sewing holes
+         * @return this builder
+         */
+        public Builder sewingHoles(boolean sewingHoles) {
+<span class="fc" id="L150">            this.sewingHoles = sewingHoles;</span>
+<span class="fc" id="L151">            return this;</span>
+        }
+
+        /**
+         * Sets the sewing configuration. Pass null to clear (Phase 1 always passes null).
+         *
+         * @param sewingConfig the sewing configuration, or null for empty
+         * @return this builder
+         */
+        public Builder sewingConfig(SewingConfig sewingConfig) {
+<span class="fc" id="L161">            this.sewingConfig = Optional.ofNullable(sewingConfig);</span>
+<span class="fc" id="L162">            return this;</span>
+        }
+
+        /** Builds the {@link MarkConfig}. */
+        public MarkConfig build() {
+<span class="fc" id="L167">            return new MarkConfig(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L174">            return true;</span>
+        }
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (!(obj instanceof MarkConfig other)) {</span>
+<span class="fc" id="L177">            return false;</span>
+        }
+<span class="fc bfc" id="L179" title="All 8 branches covered.">        return foldLines == other.foldLines</span>
+                &amp;&amp; signatureProofMarkers == other.signatureProofMarkers
+                &amp;&amp; trimLines == other.trimLines
+                &amp;&amp; sewingHoles == other.sewingHoles
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                &amp;&amp; sewingConfig.equals(other.sewingConfig);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L188">        return Objects.hash(foldLines, signatureProofMarkers, trimLines, sewingHoles, sewingConfig);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L193">        return &quot;MarkConfig{&quot;</span>
+                + &quot;foldLines=&quot; + foldLines
+                + &quot;, signatureProofMarkers=&quot; + signatureProofMarkers
+                + &quot;, trimLines=&quot; + trimLines
+                + &quot;, sewingHoles=&quot; + sewingHoles
+                + &quot;, sewingConfig=&quot; + sewingConfig
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

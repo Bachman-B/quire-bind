@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImposedSheet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">ImposedSheet.java</span></div><h1>ImposedSheet.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * An output concept representing one physical sheet of paper in an imposed signature.
+ *
+ * &lt;p&gt;Each sheet has pages on its front and back sides. The sheet's position within
+ * its signature determines its creep shift.
+ */
+public final class ImposedSheet {
+
+    private final int sheetIndex;
+    private final int signatureIndex;
+    private final List&lt;QuirePage&gt; frontPages;
+    private final List&lt;QuirePage&gt; backPages;
+    private final Optional&lt;CreepSheetResult&gt; creepResult;
+
+<span class="fc" id="L39">    private ImposedSheet(Builder builder) {</span>
+<span class="fc" id="L40">        this.sheetIndex = builder.sheetIndex;</span>
+<span class="fc" id="L41">        this.signatureIndex = builder.signatureIndex;</span>
+<span class="fc" id="L42">        this.frontPages = List.copyOf(builder.frontPages);</span>
+<span class="fc" id="L43">        this.backPages = List.copyOf(builder.backPages);</span>
+<span class="fc" id="L44">        this.creepResult = builder.creepResult;</span>
+<span class="fc" id="L45">    }</span>
+
+    /** Returns the 0-based sheet index within its signature (0 = outermost). */
+    public int getSheetIndex() {
+<span class="fc" id="L49">        return sheetIndex;</span>
+    }
+
+    /** Returns the 0-based index of the signature this sheet belongs to. */
+    public int getSignatureIndex() {
+<span class="fc" id="L54">        return signatureIndex;</span>
+    }
+
+    /** Returns the pages printed on the front side of this sheet. */
+    public List&lt;QuirePage&gt; getFrontPages() {
+<span class="fc" id="L59">        return frontPages;</span>
+    }
+
+    /** Returns the pages printed on the back side of this sheet. */
+    public List&lt;QuirePage&gt; getBackPages() {
+<span class="fc" id="L64">        return backPages;</span>
+    }
+
+    /**
+     * Returns the creep calculation result for this sheet position,
+     * or empty if creep has not been calculated.
+     */
+    public Optional&lt;CreepSheetResult&gt; getCreepResult() {
+<span class="fc" id="L72">        return creepResult;</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L77">        return new Builder();</span>
+    }
+
+    /** Builder for {@link ImposedSheet}. */
+    public static final class Builder {
+
+        private int sheetIndex;
+        private int signatureIndex;
+<span class="fc" id="L85">        private List&lt;QuirePage&gt; frontPages = List.of();</span>
+<span class="fc" id="L86">        private List&lt;QuirePage&gt; backPages = List.of();</span>
+<span class="fc" id="L87">        private Optional&lt;CreepSheetResult&gt; creepResult = Optional.empty();</span>
+
+<span class="fc" id="L89">        private Builder() {</span>
+<span class="fc" id="L90">        }</span>
+
+        /**
+         * Sets the 0-based sheet index within the signature.
+         *
+         * @param sheetIndex must be zero or positive
+         * @return this builder
+         */
+        public Builder sheetIndex(int sheetIndex) {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (sheetIndex &lt; 0) {</span>
+<span class="fc" id="L100">                throw new IllegalArgumentException(&quot;sheetIndex must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L102">            this.sheetIndex = sheetIndex;</span>
+<span class="fc" id="L103">            return this;</span>
+        }
+
+        /**
+         * Sets the 0-based signature index.
+         *
+         * @param signatureIndex must be zero or positive
+         * @return this builder
+         */
+        public Builder signatureIndex(int signatureIndex) {
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (signatureIndex &lt; 0) {</span>
+<span class="fc" id="L114">                throw new IllegalArgumentException(&quot;signatureIndex must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L116">            this.signatureIndex = signatureIndex;</span>
+<span class="fc" id="L117">            return this;</span>
+        }
+
+        /**
+         * Sets the front-side pages.
+         *
+         * @param frontPages must not be null
+         * @return this builder
+         */
+        public Builder frontPages(List&lt;QuirePage&gt; frontPages) {
+<span class="fc" id="L127">            this.frontPages = Objects.requireNonNull(frontPages, &quot;frontPages&quot;);</span>
+<span class="fc" id="L128">            return this;</span>
+        }
+
+        /**
+         * Sets the back-side pages.
+         *
+         * @param backPages must not be null
+         * @return this builder
+         */
+        public Builder backPages(List&lt;QuirePage&gt; backPages) {
+<span class="fc" id="L138">            this.backPages = Objects.requireNonNull(backPages, &quot;backPages&quot;);</span>
+<span class="fc" id="L139">            return this;</span>
+        }
+
+        /**
+         * Sets the creep result for this sheet, or null if not yet calculated.
+         *
+         * @param creepResult the result, or null
+         * @return this builder
+         */
+        public Builder creepResult(CreepSheetResult creepResult) {
+<span class="fc" id="L149">            this.creepResult = Optional.ofNullable(creepResult);</span>
+<span class="fc" id="L150">            return this;</span>
+        }
+
+        /** Builds the {@link ImposedSheet}. */
+        public ImposedSheet build() {
+<span class="fc" id="L155">            return new ImposedSheet(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L162">            return true;</span>
+        }
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (!(obj instanceof ImposedSheet other)) {</span>
+<span class="fc" id="L165">            return false;</span>
+        }
+<span class="fc bfc" id="L167" title="All 4 branches covered.">        return sheetIndex == other.sheetIndex</span>
+                &amp;&amp; signatureIndex == other.signatureIndex
+<span class="fc bfc" id="L169" title="All 2 branches covered.">                &amp;&amp; frontPages.equals(other.frontPages)</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">                &amp;&amp; backPages.equals(other.backPages)</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                &amp;&amp; creepResult.equals(other.creepResult);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L176">        return Objects.hash(sheetIndex, signatureIndex, frontPages, backPages, creepResult);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L181">        return &quot;ImposedSheet{&quot;</span>
+                + &quot;sheetIndex=&quot; + sheetIndex
+                + &quot;, signatureIndex=&quot; + signatureIndex
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

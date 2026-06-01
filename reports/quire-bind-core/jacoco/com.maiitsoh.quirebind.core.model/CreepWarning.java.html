@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreepWarning.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">CreepWarning.java</span></div><h1>CreepWarning.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * A spine margin warning produced when creep exceeds the available spine margin
+ * on one or more pages.
+ *
+ * &lt;p&gt;Produced by {@code CreepMarginAnalyser} when
+ * {@code creepMm &gt; availableMarginMm} for any sheet position.
+ */
+public final class CreepWarning {
+
+    private final WarningSeverity severity;
+    private final int sheetIndex;
+    private final List&lt;Integer&gt; affectedPages;
+    private final double creepMm;
+    private final double availableMarginMm;
+    private final double deficitMm;
+
+<span class="fc" id="L40">    private CreepWarning(Builder builder) {</span>
+<span class="fc" id="L41">        this.severity = builder.severity;</span>
+<span class="fc" id="L42">        this.sheetIndex = builder.sheetIndex;</span>
+<span class="fc" id="L43">        this.affectedPages = List.copyOf(builder.affectedPages);</span>
+<span class="fc" id="L44">        this.creepMm = builder.creepMm;</span>
+<span class="fc" id="L45">        this.availableMarginMm = builder.availableMarginMm;</span>
+<span class="fc" id="L46">        this.deficitMm = builder.deficitMm;</span>
+<span class="fc" id="L47">    }</span>
+
+    /** Returns the severity of this warning. */
+    public WarningSeverity getSeverity() {
+<span class="fc" id="L51">        return severity;</span>
+    }
+
+    /** Returns the 0-based sheet index within the signature that triggered the warning. */
+    public int getSheetIndex() {
+<span class="fc" id="L56">        return sheetIndex;</span>
+    }
+
+    /** Returns the logical page numbers affected by this creep warning. */
+    public List&lt;Integer&gt; getAffectedPages() {
+<span class="fc" id="L61">        return affectedPages;</span>
+    }
+
+    /** Returns the calculated creep shift for this sheet in millimetres. */
+    public double getCreepMm() {
+<span class="fc" id="L66">        return creepMm;</span>
+    }
+
+    /** Returns the available spine margin detected from the PDF in millimetres. */
+    public double getAvailableMarginMm() {
+<span class="fc" id="L71">        return availableMarginMm;</span>
+    }
+
+    /** Returns the deficit: {@code creepMm - availableMarginMm} in millimetres. */
+    public double getDeficitMm() {
+<span class="fc" id="L76">        return deficitMm;</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L81">        return new Builder();</span>
+    }
+
+    /** Builder for {@link CreepWarning}. */
+    public static final class Builder {
+
+        private WarningSeverity severity;
+        private int sheetIndex;
+<span class="fc" id="L89">        private List&lt;Integer&gt; affectedPages = List.of();</span>
+        private double creepMm;
+        private double availableMarginMm;
+        private double deficitMm;
+
+<span class="fc" id="L94">        private Builder() {</span>
+<span class="fc" id="L95">        }</span>
+
+        /**
+         * Sets the warning severity.
+         *
+         * @param severity must not be null
+         * @return this builder
+         */
+        public Builder severity(WarningSeverity severity) {
+<span class="fc" id="L104">            this.severity = Objects.requireNonNull(severity, &quot;severity&quot;);</span>
+<span class="fc" id="L105">            return this;</span>
+        }
+
+        /**
+         * Sets the 0-based sheet index.
+         *
+         * @param sheetIndex must be zero or positive
+         * @return this builder
+         */
+        public Builder sheetIndex(int sheetIndex) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (sheetIndex &lt; 0) {</span>
+<span class="fc" id="L116">                throw new IllegalArgumentException(&quot;sheetIndex must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L118">            this.sheetIndex = sheetIndex;</span>
+<span class="fc" id="L119">            return this;</span>
+        }
+
+        /**
+         * Sets the logical page numbers affected by this warning.
+         *
+         * @param affectedPages must not be null
+         * @return this builder
+         */
+        public Builder affectedPages(List&lt;Integer&gt; affectedPages) {
+<span class="fc" id="L129">            this.affectedPages = Objects.requireNonNull(affectedPages, &quot;affectedPages&quot;);</span>
+<span class="fc" id="L130">            return this;</span>
+        }
+
+        /**
+         * Sets the creep shift in millimetres.
+         *
+         * @param creepMm must be positive
+         * @return this builder
+         */
+        public Builder creepMm(double creepMm) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (creepMm &lt;= 0) {</span>
+<span class="fc" id="L141">                throw new IllegalArgumentException(&quot;creepMm must be &gt; 0 for a warning to exist&quot;);</span>
+            }
+<span class="fc" id="L143">            this.creepMm = creepMm;</span>
+<span class="fc" id="L144">            return this;</span>
+        }
+
+        /**
+         * Sets the available spine margin in millimetres.
+         *
+         * @param availableMarginMm must be zero or positive
+         * @return this builder
+         */
+        public Builder availableMarginMm(double availableMarginMm) {
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (availableMarginMm &lt; 0) {</span>
+<span class="fc" id="L155">                throw new IllegalArgumentException(&quot;availableMarginMm must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L157">            this.availableMarginMm = availableMarginMm;</span>
+<span class="fc" id="L158">            return this;</span>
+        }
+
+        /**
+         * Sets the deficit in millimetres.
+         *
+         * @param deficitMm must be positive (a warning only exists when there is a deficit)
+         * @return this builder
+         */
+        public Builder deficitMm(double deficitMm) {
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            if (deficitMm &lt;= 0) {</span>
+<span class="fc" id="L169">                throw new IllegalArgumentException(&quot;deficitMm must be &gt; 0&quot;);</span>
+            }
+<span class="fc" id="L171">            this.deficitMm = deficitMm;</span>
+<span class="fc" id="L172">            return this;</span>
+        }
+
+        /**
+         * Builds the {@link CreepWarning}.
+         *
+         * @return a new immutable instance
+         * @throws NullPointerException if severity is not set
+         */
+        public CreepWarning build() {
+<span class="fc" id="L182">            Objects.requireNonNull(severity, &quot;severity must be set&quot;);</span>
+<span class="fc" id="L183">            return new CreepWarning(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L190">            return true;</span>
+        }
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        if (!(obj instanceof CreepWarning other)) {</span>
+<span class="fc" id="L193">            return false;</span>
+        }
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        return sheetIndex == other.sheetIndex</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">                &amp;&amp; Double.compare(creepMm, other.creepMm) == 0</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                &amp;&amp; Double.compare(availableMarginMm, other.availableMarginMm) == 0</span>
+<span class="fc bfc" id="L198" title="All 4 branches covered.">                &amp;&amp; Double.compare(deficitMm, other.deficitMm) == 0</span>
+                &amp;&amp; severity == other.severity
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                &amp;&amp; affectedPages.equals(other.affectedPages);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L205">        return Objects.hash(severity, sheetIndex, affectedPages, creepMm, availableMarginMm, deficitMm);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L210">        return &quot;CreepWarning{&quot;</span>
+                + &quot;severity=&quot; + severity
+                + &quot;, sheetIndex=&quot; + sheetIndex
+                + &quot;, creepMm=&quot; + creepMm
+                + &quot;, deficitMm=&quot; + deficitMm
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

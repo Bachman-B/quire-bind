@@ -1,0 +1,14 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+QuireBind Batch,com.maiitsoh.quirebind.batch,QuireBindBatch,143,0,19,0,42,0,14,0,4,0
+QuireBind Batch,com.maiitsoh.quirebind.batch.parser,QuireFileParser,11,331,3,31,3,91,3,30,0,16
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchJob,0,39,0,0,0,1,0,1,0,1
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchConfig,0,12,0,0,0,1,0,1,0,1
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchCreepConfig,0,16,0,0,0,2,0,2,0,2
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchDefaults,0,31,0,0,0,2,0,2,0,2
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchMarksConfig,0,16,0,0,0,2,0,2,0,2
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchNumberingConfig,0,24,0,0,0,2,0,2,0,2
+QuireBind Batch,com.maiitsoh.quirebind.batch.model,BatchPaddingConfig,0,24,0,0,0,2,0,2,0,2
+QuireBind Batch,com.maiitsoh.quirebind.batch.runner,BatchRunner,33,316,17,35,7,82,17,19,0,10
+QuireBind Batch,com.maiitsoh.quirebind.batch.runner,BatchRunner.JobResult,0,12,0,0,0,1,0,1,0,1
+QuireBind Batch,com.maiitsoh.quirebind.batch.runner,BatchTemplateRunner.TemplateJobResult,0,15,0,0,0,1,0,1,0,1
+QuireBind Batch,com.maiitsoh.quirebind.batch.runner,BatchTemplateRunner,8,149,3,5,0,29,3,7,0,6

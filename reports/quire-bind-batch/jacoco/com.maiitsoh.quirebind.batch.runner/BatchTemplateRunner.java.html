@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BatchTemplateRunner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Batch</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.batch.runner</a> &gt; <span class="el_source">BatchTemplateRunner.java</span></div><h1>BatchTemplateRunner.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.batch.runner;
+
+import com.maiitsoh.quirebind.batch.model.BatchConfig;
+import com.maiitsoh.quirebind.batch.model.BatchJob;
+import com.maiitsoh.quirebind.batch.model.BatchPaddingConfig;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+
+/**
+ * Applies a {@link BatchConfig} template to an explicit list of input PDF paths.
+ *
+ * &lt;p&gt;Unlike {@link BatchRunner}, which reads {@code source} and {@code output} from
+ * per-job entries in the config, this runner accepts a set of input PDFs chosen at
+ * run time and derives output paths via a caller-supplied mapping function.
+ *
+ * &lt;p&gt;All binding settings (technique, paper size, numbering, marks, …) come from the
+ * template's {@code defaults} section; any {@code jobs} in the file are ignored.
+ */
+public final class BatchTemplateRunner {
+
+    private BatchTemplateRunner() {
+    }
+
+    /**
+     * Result for a single input file.
+     *
+     * @param inputPath  the source PDF that was processed
+     * @param outputPath the path the output was (or would have been) written to
+     * @param success    {@code true} if the job completed without error
+     * @param message    a human-readable summary or error description
+     */
+<span class="fc" id="L54">    public record TemplateJobResult(Path inputPath, Path outputPath, boolean success,</span>
+            String message) {
+    }
+
+    /**
+     * Processes each input PDF using the template's defaults, writing outputs
+     * to paths produced by {@code outputMapper}.
+     *
+     * @param template     parsed template configuration; must not be null
+     * @param inputs       ordered list of source PDF paths; must not be null
+     * @param outputMapper maps each input path to its output path; must not be null
+     * @param dryRun       if {@code true}, the pipeline runs but no files are written
+     * @return one result per input, in order
+     */
+    public static List&lt;TemplateJobResult&gt; run(
+            BatchConfig template,
+            List&lt;Path&gt; inputs,
+            Function&lt;Path, Path&gt; outputMapper,
+            boolean dryRun) {
+<span class="fc" id="L73">        Objects.requireNonNull(template, &quot;template&quot;);</span>
+<span class="fc" id="L74">        Objects.requireNonNull(inputs, &quot;inputs&quot;);</span>
+<span class="fc" id="L75">        Objects.requireNonNull(outputMapper, &quot;outputMapper&quot;);</span>
+
+<span class="fc" id="L77">        List&lt;TemplateJobResult&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (Path input : inputs) {</span>
+<span class="fc" id="L79">            Path output = outputMapper.apply(input);</span>
+<span class="fc" id="L80">            BatchJob syntheticJob = new BatchJob(</span>
+<span class="fc" id="L81">                    stripExtension(input.getFileName().toString()),</span>
+<span class="fc" id="L82">                    input.toString(),</span>
+<span class="fc" id="L83">                    output.toString(),</span>
+                    null,
+                    &quot;folio&quot;,
+                    0,
+                    null,
+                    null,
+                    BatchPaddingConfig.NONE,
+                    null,
+                    null,
+                    null);
+<span class="fc" id="L93">            Path baseDir = input.toAbsolutePath().getParent();</span>
+<span class="fc" id="L94">            BatchRunner.JobResult jr = BatchRunner.runSingleJob(</span>
+<span class="fc" id="L95">                    syntheticJob, template.defaults(), baseDir, dryRun);</span>
+<span class="fc" id="L96">            results.add(new TemplateJobResult(input, output, jr.success(), jr.message()));</span>
+<span class="fc" id="L97">        }</span>
+<span class="fc" id="L98">        return List.copyOf(results);</span>
+    }
+
+    /**
+     * Convenience: derive output paths by inserting {@code suffix} before the
+     * {@code .pdf} extension (or appending it if there is no extension).
+     *
+     * &lt;p&gt;Each output is placed in the same directory as its input.
+     * Example: {@code /docs/book.pdf} + suffix {@code -imposed} →
+     * {@code /docs/book-imposed.pdf}.
+     *
+     * @param template parsed template configuration; must not be null
+     * @param inputs   source PDF paths; must not be null
+     * @param suffix   string to insert before the {@code .pdf} extension; must not be blank
+     * @param dryRun   skip writing output files
+     * @return one result per input, in order
+     */
+    public static List&lt;TemplateJobResult&gt; runWithSuffix(
+            BatchConfig template, List&lt;Path&gt; inputs, String suffix, boolean dryRun) {
+<span class="fc" id="L117">        Objects.requireNonNull(suffix, &quot;suffix&quot;);</span>
+<span class="fc" id="L118">        return run(template, inputs, input -&gt; {</span>
+<span class="fc" id="L119">            String name = input.getFileName().toString();</span>
+<span class="fc" id="L120">            int dot = name.lastIndexOf('.');</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">            String outName = dot &gt; 0</span>
+<span class="fc" id="L122">                    ? name.substring(0, dot) + suffix + name.substring(dot)</span>
+<span class="pc" id="L123">                    : name + suffix;</span>
+<span class="fc" id="L124">            Path dir = input.getParent();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            return dir != null ? dir.resolve(outName) : Path.of(outName);</span>
+        }, dryRun);
+    }
+
+    /**
+     * Convenience: write all outputs to a single directory, preserving the original
+     * file name.
+     *
+     * @param template  parsed template configuration; must not be null
+     * @param inputs    source PDF paths; must not be null
+     * @param outputDir directory where outputs are written; must not be null
+     * @param dryRun    skip writing output files
+     * @return one result per input, in order
+     */
+    public static List&lt;TemplateJobResult&gt; runWithDirectory(
+            BatchConfig template, List&lt;Path&gt; inputs, Path outputDir, boolean dryRun) {
+<span class="fc" id="L141">        Objects.requireNonNull(outputDir, &quot;outputDir&quot;);</span>
+<span class="fc" id="L142">        return run(template, inputs, input -&gt; outputDir.resolve(input.getFileName()), dryRun);</span>
+    }
+
+    private static String stripExtension(String name) {
+<span class="fc" id="L146">        int dot = name.lastIndexOf('.');</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        return dot &gt; 0 ? name.substring(0, dot) : name;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

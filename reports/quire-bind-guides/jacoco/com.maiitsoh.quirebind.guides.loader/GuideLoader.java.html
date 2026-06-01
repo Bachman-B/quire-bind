@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GuideLoader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Guides</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.guides.loader</a> &gt; <span class="el_source">GuideLoader.java</span></div><h1>GuideLoader.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.guides.loader;
+
+import com.maiitsoh.quirebind.guides.model.BindingGuide;
+import com.maiitsoh.quirebind.guides.model.GuideMetadata;
+import com.maiitsoh.quirebind.guides.model.GuideSection;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Loads bundled binding guides from the classpath.
+ *
+ * &lt;p&gt;Guide resources follow the path convention:
+ * &lt;pre&gt;
+ *   /guides/{technique-id-with-hyphens}/{locale}.md
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;Each file uses YAML front matter delimited by {@code ---} on its own line,
+ * followed by a Markdown body.
+ *
+ * &lt;p&gt;The set of bundled guides is listed in {@code /guides/index}, one entry per line
+ * in the format {@code technique-id/locale} (e.g. {@code saddle-stitch/en}).
+ */
+public final class GuideLoader {
+
+    private static final String GUIDES_INDEX = &quot;/guides/index&quot;;
+    private static final String GUIDES_BASE = &quot;/guides/&quot;;
+    private static final String FRONTMATTER_DELIMITER = &quot;---&quot;;
+
+    private GuideLoader() {
+    }
+
+    /**
+     * Loads all bundled guides listed in {@code /guides/index}.
+     *
+     * @return an unmodifiable list of all available guides, in index order
+     * @throws IOException if any guide resource cannot be read or parsed
+     */
+    public static List&lt;BindingGuide&gt; loadAll() throws IOException {
+<span class="fc" id="L65">        try (InputStream in = GuideLoader.class.getResourceAsStream(GUIDES_INDEX)) {</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            if (in == null) {</span>
+<span class="nc" id="L67">                return List.of();</span>
+            }
+<span class="fc" id="L69">            String index = new String(in.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L70">            List&lt;BindingGuide&gt; guides = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            for (String line : index.lines().toList()) {</span>
+<span class="fc" id="L72">                String trimmed = line.trim();</span>
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">                if (trimmed.isEmpty() || trimmed.startsWith(&quot;#&quot;)) {</span>
+<span class="fc" id="L74">                    continue;</span>
+                }
+<span class="fc" id="L76">                String[] parts = trimmed.split(&quot;/&quot;, 2);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                if (parts.length == 2) {</span>
+                    // Index uses hyphens; load() expects underscores for the techniqueId
+<span class="fc" id="L79">                    guides.add(load(parts[0].replace('-', '_'), parts[1]));</span>
+                }
+<span class="fc" id="L81">            }</span>
+<span class="fc" id="L82">            return List.copyOf(guides);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        }</span>
+    }
+
+    /**
+     * Loads a single guide by technique ID and locale.
+     *
+     * @param techniqueId the binding technique identifier using underscores
+     *                    (e.g. {@code saddle_stitch}); must not be null
+     * @param locale      the BCP 47 locale tag (e.g. {@code en}); must not be null
+     * @return the parsed guide
+     * @throws IOException if the resource cannot be found or parsed
+     */
+    public static BindingGuide load(String techniqueId, String locale) throws IOException {
+<span class="fc" id="L96">        Objects.requireNonNull(techniqueId, &quot;techniqueId&quot;);</span>
+<span class="fc" id="L97">        Objects.requireNonNull(locale, &quot;locale&quot;);</span>
+<span class="fc" id="L98">        String resourcePath = GUIDES_BASE + techniqueId.replace('_', '-') + &quot;/&quot; + locale + &quot;.md&quot;;</span>
+<span class="fc" id="L99">        try (InputStream in = GuideLoader.class.getResourceAsStream(resourcePath)) {</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (in == null) {</span>
+<span class="fc" id="L101">                throw new IOException(&quot;Guide resource not found: &quot; + resourcePath);</span>
+            }
+<span class="fc" id="L103">            String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L104">            return parse(content, resourcePath);</span>
+        }
+    }
+
+    static BindingGuide parse(String content, String resourcePath) throws IOException {
+<span class="fc" id="L109">        String[] lines = content.split(&quot;\n&quot;, -1);</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">        if (lines.length &lt; 2 || !lines[0].trim().equals(FRONTMATTER_DELIMITER)) {</span>
+<span class="fc" id="L111">            throw new IOException(&quot;Guide at '&quot; + resourcePath + &quot;' does not start with '---'&quot;);</span>
+        }
+<span class="fc" id="L113">        int endIdx = -1;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (int i = 1; i &lt; lines.length; i++) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (lines[i].trim().equals(FRONTMATTER_DELIMITER)) {</span>
+<span class="fc" id="L116">                endIdx = i;</span>
+<span class="fc" id="L117">                break;</span>
+            }
+        }
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (endIdx &lt; 0) {</span>
+<span class="fc" id="L121">            throw new IOException(</span>
+                    &quot;Guide at '&quot; + resourcePath + &quot;' has no closing '---' for frontmatter&quot;);
+        }
+<span class="fc" id="L124">        String yamlBlock = String.join(&quot;\n&quot;, Arrays.copyOfRange(lines, 1, endIdx));</span>
+<span class="fc" id="L125">        String body = String.join(&quot;\n&quot;,</span>
+<span class="fc" id="L126">                Arrays.copyOfRange(lines, endIdx + 1, lines.length)).stripLeading();</span>
+<span class="fc" id="L127">        return new BindingGuide(parseMetadata(yamlBlock), body);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static GuideMetadata parseMetadata(String yaml) {
+<span class="fc" id="L132">        Yaml parser = new Yaml();</span>
+<span class="fc" id="L133">        Map&lt;String, Object&gt; map = parser.load(yaml);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (map == null) {</span>
+<span class="fc" id="L135">            map = Map.of();</span>
+        }
+
+<span class="fc" id="L138">        List&lt;GuideSection&gt; sections = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L139">        Object rawSections = map.get(&quot;sections&quot;);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (rawSections instanceof List&lt;?&gt; sectionList) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            for (Object s : sectionList) {</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">                if (s instanceof Map&lt;?, ?&gt; sm) {</span>
+<span class="fc" id="L143">                    String id = Objects.toString(sm.get(&quot;id&quot;), &quot;&quot;);</span>
+<span class="fc" id="L144">                    String title = Objects.toString(sm.get(&quot;title&quot;), &quot;&quot;);</span>
+<span class="pc bpc" id="L145" title="2 of 4 branches missed.">                    if (!id.isBlank() &amp;&amp; !title.isBlank()) {</span>
+<span class="fc" id="L146">                        sections.add(new GuideSection(id, title));</span>
+                    }
+                }
+<span class="fc" id="L149">            }</span>
+        }
+
+<span class="fc" id="L152">        return GuideMetadata.builder()</span>
+<span class="fc" id="L153">                .quireGuideVersion(Objects.toString(map.get(&quot;quire_guide_version&quot;), &quot;&quot;))</span>
+<span class="fc" id="L154">                .techniqueId(Objects.toString(map.get(&quot;technique_id&quot;), &quot;&quot;))</span>
+<span class="fc" id="L155">                .locale(Objects.toString(map.get(&quot;locale&quot;), &quot;&quot;))</span>
+<span class="fc" id="L156">                .title(Objects.toString(map.get(&quot;title&quot;), &quot;&quot;))</span>
+<span class="fc" id="L157">                .subtitle(Objects.toString(map.get(&quot;subtitle&quot;), &quot;&quot;))</span>
+<span class="fc" id="L158">                .group(Objects.toString(map.get(&quot;group&quot;), &quot;&quot;))</span>
+<span class="fc" id="L159">                .difficulty(Objects.toString(map.get(&quot;difficulty&quot;), &quot;&quot;))</span>
+<span class="fc" id="L160">                .timeEstimate(Objects.toString(map.get(&quot;time_estimate&quot;), &quot;&quot;))</span>
+<span class="fc" id="L161">                .schematicDescription(Objects.toString(map.get(&quot;schematic_description&quot;), &quot;&quot;))</span>
+<span class="fc" id="L162">                .tools(toStringList(map.get(&quot;tools&quot;)))</span>
+<span class="fc" id="L163">                .materials(toStringList(map.get(&quot;materials&quot;)))</span>
+<span class="fc" id="L164">                .readingDirectionsSupported(toStringList(map.get(&quot;reading_directions_supported&quot;)))</span>
+<span class="fc" id="L165">                .relatedTechniques(toStringList(map.get(&quot;related_techniques&quot;)))</span>
+<span class="fc" id="L166">                .sections(sections)</span>
+<span class="fc" id="L167">                .build();</span>
+    }
+
+    private static List&lt;String&gt; toStringList(Object obj) {
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        if (!(obj instanceof List&lt;?&gt; list)) {</span>
+<span class="fc" id="L172">            return List.of();</span>
+        }
+<span class="fc" id="L174">        return list.stream()</span>
+<span class="fc" id="L175">                .map(item -&gt; Objects.toString(item, &quot;&quot;))</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">                .filter(s -&gt; !s.isBlank())</span>
+<span class="fc" id="L177">                .toList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

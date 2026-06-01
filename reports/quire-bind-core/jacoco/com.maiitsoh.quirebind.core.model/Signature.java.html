@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Signature.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">Signature.java</span></div><h1>Signature.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * An output concept representing one folded signature ready for binding.
+ *
+ * &lt;p&gt;Computed by the imposition engine. A signature contains one or more
+ * {@link ImposedSheet} instances stacked and folded together.
+ */
+public final class Signature {
+
+    private final int signatureIndex;
+    private final List&lt;ImposedSheet&gt; sheets;
+    private final List&lt;Integer&gt; logicalPageNumbers;
+
+<span class="fc" id="L36">    private Signature(Builder builder) {</span>
+<span class="fc" id="L37">        this.signatureIndex = builder.signatureIndex;</span>
+<span class="fc" id="L38">        this.sheets = List.copyOf(builder.sheets);</span>
+<span class="fc" id="L39">        this.logicalPageNumbers = List.copyOf(builder.logicalPageNumbers);</span>
+<span class="fc" id="L40">    }</span>
+
+    /** Returns the 0-based index of this signature in the complete book. */
+    public int getSignatureIndex() {
+<span class="fc" id="L44">        return signatureIndex;</span>
+    }
+
+    /** Returns the sheets that make up this signature (outermost first). */
+    public List&lt;ImposedSheet&gt; getSheets() {
+<span class="fc" id="L49">        return sheets;</span>
+    }
+
+    /** Returns the logical page numbers assigned to this signature's pages. */
+    public List&lt;Integer&gt; getLogicalPageNumbers() {
+<span class="fc" id="L54">        return logicalPageNumbers;</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L59">        return new Builder();</span>
+    }
+
+    /** Builder for {@link Signature}. */
+    public static final class Builder {
+
+        private int signatureIndex;
+<span class="fc" id="L66">        private List&lt;ImposedSheet&gt; sheets = List.of();</span>
+<span class="fc" id="L67">        private List&lt;Integer&gt; logicalPageNumbers = List.of();</span>
+
+<span class="fc" id="L69">        private Builder() {</span>
+<span class="fc" id="L70">        }</span>
+
+        /**
+         * Sets the 0-based signature index.
+         *
+         * @param signatureIndex must be zero or positive
+         * @return this builder
+         */
+        public Builder signatureIndex(int signatureIndex) {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (signatureIndex &lt; 0) {</span>
+<span class="fc" id="L80">                throw new IllegalArgumentException(&quot;signatureIndex must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L82">            this.signatureIndex = signatureIndex;</span>
+<span class="fc" id="L83">            return this;</span>
+        }
+
+        /**
+         * Sets the imposed sheets (outermost first).
+         *
+         * @param sheets must not be null
+         * @return this builder
+         */
+        public Builder sheets(List&lt;ImposedSheet&gt; sheets) {
+<span class="fc" id="L93">            this.sheets = Objects.requireNonNull(sheets, &quot;sheets&quot;);</span>
+<span class="fc" id="L94">            return this;</span>
+        }
+
+        /**
+         * Sets the logical page numbers for this signature.
+         *
+         * @param logicalPageNumbers must not be null
+         * @return this builder
+         */
+        public Builder logicalPageNumbers(List&lt;Integer&gt; logicalPageNumbers) {
+<span class="fc" id="L104">            this.logicalPageNumbers = Objects.requireNonNull(logicalPageNumbers, &quot;logicalPageNumbers&quot;);</span>
+<span class="fc" id="L105">            return this;</span>
+        }
+
+        /** Builds the {@link Signature}. */
+        public Signature build() {
+<span class="fc" id="L110">            return new Signature(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L117">            return true;</span>
+        }
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (!(obj instanceof Signature other)) {</span>
+<span class="fc" id="L120">            return false;</span>
+        }
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        return signatureIndex == other.signatureIndex</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                &amp;&amp; sheets.equals(other.sheets)</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                &amp;&amp; logicalPageNumbers.equals(other.logicalPageNumbers);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L129">        return Objects.hash(signatureIndex, sheets, logicalPageNumbers);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L134">        return &quot;Signature{&quot;</span>
+                + &quot;signatureIndex=&quot; + signatureIndex
+<span class="fc" id="L136">                + &quot;, sheetCount=&quot; + sheets.size()</span>
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

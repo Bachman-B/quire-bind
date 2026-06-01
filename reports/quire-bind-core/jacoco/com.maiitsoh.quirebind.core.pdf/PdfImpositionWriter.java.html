@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PdfImpositionWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.pdf</a> &gt; <span class="el_source">PdfImpositionWriter.java</span></div><h1>PdfImpositionWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.pdf;
+
+import com.maiitsoh.quirebind.core.model.FolioPosition;
+import com.maiitsoh.quirebind.core.model.ImposedSheet;
+import com.maiitsoh.quirebind.core.model.MarkConfig;
+import com.maiitsoh.quirebind.core.model.SewingConfig;
+import com.maiitsoh.quirebind.core.model.NumberingConfig;
+import com.maiitsoh.quirebind.core.model.PaperSize;
+import com.maiitsoh.quirebind.core.model.PageType;
+import com.maiitsoh.quirebind.core.model.QuirePage;
+import com.maiitsoh.quirebind.core.model.Signature;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.multipdf.LayerUtility;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.util.Matrix;
+
+import java.awt.Color;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Writes composed {@link Signature} objects to an imposed output PDF.
+ *
+ * &lt;h3&gt;Output layout — FOLIO&lt;/h3&gt;
+ * Each {@link ImposedSheet} produces two consecutive PDF pages (front then back):
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;Front&lt;/b&gt;: landscape sheet, left half = {@code frontPages[0]},
+ *       right half = {@code frontPages[1]}&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Back&lt;/b&gt;: landscape sheet, left half = {@code backPages[0]},
+ *       right half = {@code backPages[1]}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Intended for duplex printing with &lt;em&gt;short-edge flip&lt;/em&gt; on landscape paper.
+ * Source pages are scaled uniformly to fill each half while preserving aspect ratio.
+ *
+ * &lt;p&gt;Pages of type {@link PageType#CONTENT} with a {@code sourcePageIndex} set are
+ * imported from the provided source PDF. All other page types produce a blank half.
+ *
+ * &lt;p&gt;{@link PaperSize#CUSTOM} is not supported in Phase 1.
+ */
+public final class PdfImpositionWriter {
+
+    private PdfImpositionWriter() {
+    }
+
+    /**
+     * Writes the imposed output PDF without marks or folios.
+     *
+     * @param signatures    composed signatures; must not be null
+     * @param sourcePdfPath path to the source PDF, or {@code null} if all pages are blank
+     * @param outputPath    destination path; must not be null
+     * @param paperSize     book page size; must not be null; {@code CUSTOM} is unsupported
+     * @throws IOException                   if any file operation fails
+     * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
+     */
+    public static void write(
+            List&lt;Signature&gt; signatures,
+            Path sourcePdfPath,
+            Path outputPath,
+            PaperSize paperSize) throws IOException {
+<span class="fc" id="L90">        write(signatures, sourcePdfPath, outputPath, paperSize,</span>
+<span class="fc" id="L91">                MarkConfig.builder().build(), null);</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Writes the imposed output PDF with optional marks and folios.
+     * Delegates to {@link #write(List, Map, Path, PaperSize, MarkConfig, NumberingConfig)}.
+     *
+     * @param signatures       composed signatures; must not be null
+     * @param sourcePdfPath    path to the source PDF, or {@code null} if all pages are blank
+     * @param outputPath       destination path; must not be null
+     * @param paperSize        book page size; must not be null; {@code CUSTOM} is unsupported
+     * @param markConfig       controls which output marks are rendered; null disables all marks
+     * @param numberingConfig  controls folio rendering; null disables folio output
+     * @throws IOException                   if any file operation fails
+     * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
+     */
+    public static void write(
+            List&lt;Signature&gt; signatures,
+            Path sourcePdfPath,
+            Path outputPath,
+            PaperSize paperSize,
+            MarkConfig markConfig,
+            NumberingConfig numberingConfig) throws IOException {
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        Map&lt;String, Path&gt; docs = sourcePdfPath != null</span>
+<span class="fc" id="L115">                ? Map.of(sourcePdfPath.toString(), sourcePdfPath)</span>
+<span class="fc" id="L116">                : Map.of();</span>
+<span class="fc" id="L117">        write(signatures, docs, outputPath, paperSize, markConfig, numberingConfig);</span>
+<span class="fc" id="L118">    }</span>
+
+    /**
+     * Writes the imposed output PDF sourcing pages from multiple source documents.
+     *
+     * &lt;p&gt;Each page in the sequence carries a {@code sourceDocumentId} that must match a key
+     * in {@code sourceDocPaths}. Pages whose document ID is absent or unmapped produce a
+     * blank half on the output sheet.
+     *
+     * @param signatures       composed signatures; must not be null
+     * @param sourceDocPaths   map from document ID to file path; may be null or empty
+     * @param outputPath       destination path; must not be null
+     * @param paperSize        book page size; must not be null; {@code CUSTOM} is unsupported
+     * @param markConfig       controls which output marks are rendered; null disables all marks
+     * @param numberingConfig  controls folio rendering; null disables folio output
+     * @throws IOException                   if any file operation fails
+     * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
+     */
+    public static void write(
+            List&lt;Signature&gt; signatures,
+            Map&lt;String, Path&gt; sourceDocPaths,
+            Path outputPath,
+            PaperSize paperSize,
+            MarkConfig markConfig,
+            NumberingConfig numberingConfig) throws IOException {
+<span class="fc" id="L143">        Objects.requireNonNull(signatures, &quot;signatures&quot;);</span>
+<span class="fc" id="L144">        Objects.requireNonNull(outputPath, &quot;outputPath&quot;);</span>
+<span class="fc" id="L145">        Objects.requireNonNull(paperSize, &quot;paperSize&quot;);</span>
+
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        MarkConfig marks = markConfig != null ? markConfig : MarkConfig.builder().build();</span>
+<span class="fc" id="L148">        PDRectangle bookRect = bookPageRect(paperSize);</span>
+<span class="fc" id="L149">        PDRectangle sheetRect = new PDRectangle(bookRect.getWidth() * 2, bookRect.getHeight());</span>
+<span class="fc" id="L150">        int totalSigs = signatures.size();</span>
+
+<span class="fc" id="L152">        PDFont font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);</span>
+<span class="fc" id="L153">        Map&lt;String, PDDocument&gt; openDocs = openSourceDocs(sourceDocPaths);</span>
+        try {
+<span class="fc" id="L155">            try (PDDocument outDoc = new PDDocument()) {</span>
+<span class="fc" id="L156">                LayerUtility layers = new LayerUtility(outDoc);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                for (Signature sig : signatures) {</span>
+<span class="fc" id="L158">                    int sheetsInSig = sig.getSheets().size();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">                    for (ImposedSheet sheet : sig.getSheets()) {</span>
+<span class="fc" id="L160">                        addSheetPage(outDoc, layers, openDocs, sheetRect, bookRect,</span>
+<span class="fc" id="L161">                                sheet.getFrontPages(), marks, numberingConfig, font,</span>
+<span class="fc" id="L162">                                sheet.getSheetIndex(), sheetsInSig,</span>
+<span class="fc" id="L163">                                sig.getSignatureIndex(), totalSigs);</span>
+<span class="fc" id="L164">                        addSheetPage(outDoc, layers, openDocs, sheetRect, bookRect,</span>
+<span class="fc" id="L165">                                sheet.getBackPages(), marks, numberingConfig, font,</span>
+<span class="fc" id="L166">                                sheet.getSheetIndex(), sheetsInSig,</span>
+<span class="fc" id="L167">                                sig.getSignatureIndex(), totalSigs);</span>
+<span class="fc" id="L168">                    }</span>
+<span class="fc" id="L169">                }</span>
+<span class="fc" id="L170">                outDoc.save(outputPath.toFile());</span>
+            }
+        } finally {
+<span class="fc" id="L173">            closeAll(openDocs);</span>
+        }
+<span class="fc" id="L175">    }</span>
+
+    private static Map&lt;String, PDDocument&gt; openSourceDocs(Map&lt;String, Path&gt; sourceDocPaths)
+            throws IOException {
+<span class="fc" id="L179">        Map&lt;String, PDDocument&gt; docs = new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (sourceDocPaths != null) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (Map.Entry&lt;String, Path&gt; entry : sourceDocPaths.entrySet()) {</span>
+<span class="fc" id="L182">                docs.put(entry.getKey(), Loader.loadPDF(entry.getValue().toFile()));</span>
+<span class="fc" id="L183">            }</span>
+        }
+<span class="fc" id="L185">        return docs;</span>
+    }
+
+    private static void closeAll(Map&lt;String, PDDocument&gt; docs) {
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        for (PDDocument doc : docs.values()) {</span>
+            try {
+<span class="fc" id="L191">                doc.close();</span>
+<span class="nc" id="L192">            } catch (IOException ignored) {</span>
+                // COVERAGE-EXCLUDE: PDFBox PDDocument.close() does not throw in practice
+<span class="fc" id="L194">            }</span>
+<span class="fc" id="L195">        }</span>
+<span class="fc" id="L196">    }</span>
+
+    private static void addSheetPage(
+            PDDocument outDoc,
+            LayerUtility layers,
+            Map&lt;String, PDDocument&gt; srcDocs,
+            PDRectangle sheetRect,
+            PDRectangle bookRect,
+            List&lt;QuirePage&gt; pages,
+            MarkConfig marks,
+            NumberingConfig numberingConfig,
+            PDFont font,
+            int sheetIndex,
+            int sheetsInSig,
+            int sigIndex,
+            int totalSigs) throws IOException {
+<span class="fc" id="L212">        PDPage outPage = new PDPage(sheetRect);</span>
+<span class="fc" id="L213">        outDoc.addPage(outPage);</span>
+<span class="fc" id="L214">        float halfW = bookRect.getWidth();</span>
+<span class="fc" id="L215">        float halfH = bookRect.getHeight();</span>
+<span class="fc" id="L216">        try (PDPageContentStream cs = new PDPageContentStream(outDoc, outPage)) {</span>
+<span class="fc" id="L217">            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(0), 0f, halfW, halfH);</span>
+<span class="fc" id="L218">            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(1), halfW, halfW, halfH);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            if (marks.isFoldLines()) {</span>
+<span class="fc" id="L220">                renderFoldLine(cs, halfW, halfH);</span>
+            }
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            if (marks.isTrimLines()) {</span>
+<span class="fc" id="L223">                renderTrimLines(cs, 0f, halfW, halfH);</span>
+<span class="fc" id="L224">                renderTrimLines(cs, halfW, halfW, halfH);</span>
+            }
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            if (marks.isSignatureProofMarkers()) {</span>
+<span class="fc" id="L227">                renderSignatureProofMark(cs, halfW, halfH, sigIndex, totalSigs);</span>
+            }
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (marks.isSewingHoles()) {</span>
+<span class="fc" id="L230">                SewingConfig sc = marks.getSewingConfig().orElseGet(SewingConfig::defaults);</span>
+<span class="fc" id="L231">                renderSewingHoles(cs, halfW, halfH, sc);</span>
+            }
+<span class="fc bfc" id="L233" title="All 2 branches covered.">            if (numberingConfig != null) {</span>
+<span class="fc" id="L234">                renderFolio(cs, pages.get(0), numberingConfig, font, 0f, halfW, halfH);</span>
+<span class="fc" id="L235">                renderFolio(cs, pages.get(1), numberingConfig, font, halfW, halfW, halfH);</span>
+            }
+        }
+<span class="fc" id="L238">    }</span>
+
+    private static void placePageOnSheet(
+            PDDocument outDoc,
+            LayerUtility layers,
+            PDPageContentStream cs,
+            Map&lt;String, PDDocument&gt; srcDocs,
+            QuirePage page,
+            float xOffset,
+            float halfW,
+            float halfH) throws IOException {
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if (page.getPageType() != PageType.CONTENT) {</span>
+<span class="fc" id="L250">            return;</span>
+        }
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (page.getSourcePageIndex().isEmpty()) {</span>
+<span class="fc" id="L253">            return;</span>
+        }
+<span class="fc" id="L255">        String docId = page.getSourceDocumentId().orElse(null);</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        PDDocument srcDoc = docId != null ? srcDocs.get(docId) : null;</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (srcDoc == null) {</span>
+<span class="fc" id="L258">            return;</span>
+        }
+<span class="fc" id="L260">        int srcIdx = page.getSourcePageIndex().get();</span>
+<span class="fc" id="L261">        PDFormXObject form = layers.importPageAsForm(srcDoc, srcIdx);</span>
+<span class="fc" id="L262">        PDRectangle srcBox = srcDoc.getPage(srcIdx).getMediaBox();</span>
+<span class="fc" id="L263">        float scale = Math.min(halfW / srcBox.getWidth(), halfH / srcBox.getHeight());</span>
+<span class="fc" id="L264">        float tx = xOffset + (halfW - srcBox.getWidth() * scale) / 2f;</span>
+<span class="fc" id="L265">        float ty = (halfH - srcBox.getHeight() * scale) / 2f;</span>
+<span class="fc" id="L266">        cs.saveGraphicsState();</span>
+<span class="fc" id="L267">        cs.transform(new Matrix(scale, 0, 0, scale, tx, ty));</span>
+<span class="fc" id="L268">        cs.drawForm(form);</span>
+<span class="fc" id="L269">        cs.restoreGraphicsState();</span>
+<span class="fc" id="L270">    }</span>
+
+    private static void renderFoldLine(
+            PDPageContentStream cs, float halfW, float halfH) throws IOException {
+<span class="fc" id="L274">        cs.saveGraphicsState();</span>
+<span class="fc" id="L275">        cs.setStrokingColor(new Color(0.65f, 0.65f, 0.65f));</span>
+<span class="fc" id="L276">        cs.setLineWidth(0.5f);</span>
+<span class="fc" id="L277">        cs.moveTo(halfW, 0);</span>
+<span class="fc" id="L278">        cs.lineTo(halfW, halfH);</span>
+<span class="fc" id="L279">        cs.stroke();</span>
+<span class="fc" id="L280">        cs.restoreGraphicsState();</span>
+<span class="fc" id="L281">    }</span>
+
+    private static void renderTrimLines(
+            PDPageContentStream cs, float xOffset, float halfW, float halfH) throws IOException {
+<span class="fc" id="L285">        float trimLen = 8f;</span>
+<span class="fc" id="L286">        float inset = 4f;</span>
+<span class="fc" id="L287">        cs.saveGraphicsState();</span>
+<span class="fc" id="L288">        cs.setStrokingColor(Color.BLACK);</span>
+<span class="fc" id="L289">        cs.setLineWidth(0.25f);</span>
+        // Bottom-left corner
+<span class="fc" id="L291">        cs.moveTo(xOffset + inset + trimLen, inset);</span>
+<span class="fc" id="L292">        cs.lineTo(xOffset + inset, inset);</span>
+<span class="fc" id="L293">        cs.lineTo(xOffset + inset, inset + trimLen);</span>
+<span class="fc" id="L294">        cs.stroke();</span>
+        // Bottom-right corner
+<span class="fc" id="L296">        cs.moveTo(xOffset + halfW - inset - trimLen, inset);</span>
+<span class="fc" id="L297">        cs.lineTo(xOffset + halfW - inset, inset);</span>
+<span class="fc" id="L298">        cs.lineTo(xOffset + halfW - inset, inset + trimLen);</span>
+<span class="fc" id="L299">        cs.stroke();</span>
+        // Top-left corner
+<span class="fc" id="L301">        cs.moveTo(xOffset + inset + trimLen, halfH - inset);</span>
+<span class="fc" id="L302">        cs.lineTo(xOffset + inset, halfH - inset);</span>
+<span class="fc" id="L303">        cs.lineTo(xOffset + inset, halfH - inset - trimLen);</span>
+<span class="fc" id="L304">        cs.stroke();</span>
+        // Top-right corner
+<span class="fc" id="L306">        cs.moveTo(xOffset + halfW - inset - trimLen, halfH - inset);</span>
+<span class="fc" id="L307">        cs.lineTo(xOffset + halfW - inset, halfH - inset);</span>
+<span class="fc" id="L308">        cs.lineTo(xOffset + halfW - inset, halfH - inset - trimLen);</span>
+<span class="fc" id="L309">        cs.stroke();</span>
+<span class="fc" id="L310">        cs.restoreGraphicsState();</span>
+<span class="fc" id="L311">    }</span>
+
+    private static void renderSignatureProofMark(
+            PDPageContentStream cs, float halfW, float halfH,
+            int sigIndex, int totalSigs) throws IOException {
+<span class="fc" id="L316">        float markH = 6f;</span>
+<span class="fc" id="L317">        float markW = 14f;</span>
+<span class="fc" id="L318">        float rangeH = halfH * 0.8f;</span>
+<span class="fc" id="L319">        float startY = halfH * 0.1f;</span>
+<span class="fc" id="L320">        float denominator = Math.max(totalSigs - 1, 1);</span>
+<span class="fc" id="L321">        float y = startY + (float) sigIndex / denominator * rangeH;</span>
+<span class="fc" id="L322">        float x = halfW - markW / 2f;</span>
+<span class="fc" id="L323">        float shade = 0.2f + 0.6f * ((float) sigIndex / Math.max(totalSigs, 1));</span>
+<span class="fc" id="L324">        cs.saveGraphicsState();</span>
+<span class="fc" id="L325">        cs.setNonStrokingColor(new Color(shade, shade * 0.5f, 0.1f));</span>
+<span class="fc" id="L326">        cs.addRect(x, y, markW, markH);</span>
+<span class="fc" id="L327">        cs.fill();</span>
+<span class="fc" id="L328">        cs.restoreGraphicsState();</span>
+<span class="fc" id="L329">    }</span>
+
+    private static void renderSewingHoles(
+            PDPageContentStream cs, float halfW, float halfH,
+            SewingConfig sewingConfig) throws IOException {
+<span class="fc" id="L334">        float mmToPt = 72f / 25.4f;</span>
+<span class="fc" id="L335">        float endMarginPt = (float) (sewingConfig.getEndMarginMm() * mmToPt);</span>
+<span class="fc" id="L336">        float y0 = endMarginPt;</span>
+<span class="fc" id="L337">        float y1 = halfH - endMarginPt;</span>
+<span class="fc" id="L338">        float dotSize = 3f;</span>
+<span class="fc" id="L339">        float x = halfW - dotSize / 2f;</span>
+<span class="fc" id="L340">        cs.saveGraphicsState();</span>
+<span class="fc" id="L341">        cs.setNonStrokingColor(Color.BLACK);</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        if (sewingConfig.getStyle() == SewingConfig.SewingStyle.BANDED) {</span>
+<span class="fc" id="L343">            renderBandedHoles(cs, x, y0, y1, dotSize, sewingConfig, mmToPt);</span>
+        } else {
+<span class="fc" id="L345">            renderSimpleHoles(cs, x, y0, y1, dotSize, sewingConfig.getHoleCount());</span>
+        }
+<span class="fc" id="L347">        cs.restoreGraphicsState();</span>
+<span class="fc" id="L348">    }</span>
+
+    private static void renderSimpleHoles(
+            PDPageContentStream cs, float x, float y0, float y1,
+            float dotSize, int numHoles) throws IOException {
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        for (int i = 0; i &lt; numHoles; i++) {</span>
+<span class="fc" id="L354">            float y = y0 + (float) i / (numHoles - 1) * (y1 - y0);</span>
+<span class="fc" id="L355">            cs.addRect(x, y, dotSize, dotSize);</span>
+<span class="fc" id="L356">            cs.fill();</span>
+        }
+<span class="fc" id="L358">    }</span>
+
+    private static void renderBandedHoles(
+            PDPageContentStream cs, float x, float y0, float y1,
+            float dotSize, SewingConfig cfg, float mmToPt) throws IOException {
+<span class="fc" id="L363">        int bands = cfg.getBandCount();</span>
+<span class="fc" id="L364">        float halfBandPt = (float) (cfg.getBandWidthMm() * mmToPt) / 2f;</span>
+<span class="fc" id="L365">        cs.addRect(x, y0, dotSize, dotSize);</span>
+<span class="fc" id="L366">        cs.fill();</span>
+<span class="fc bfc" id="L367" title="All 2 branches covered.">        for (int k = 1; k &lt;= bands; k++) {</span>
+<span class="fc" id="L368">            float center = y0 + (float) k / (bands + 1) * (y1 - y0);</span>
+<span class="fc" id="L369">            cs.addRect(x, center - halfBandPt, dotSize, dotSize);</span>
+<span class="fc" id="L370">            cs.fill();</span>
+<span class="fc" id="L371">            cs.addRect(x, center + halfBandPt, dotSize, dotSize);</span>
+<span class="fc" id="L372">            cs.fill();</span>
+        }
+<span class="fc" id="L374">        cs.addRect(x, y1, dotSize, dotSize);</span>
+<span class="fc" id="L375">        cs.fill();</span>
+<span class="fc" id="L376">    }</span>
+
+    private static void renderFolio(
+            PDPageContentStream cs,
+            QuirePage page,
+            NumberingConfig numberingConfig,
+            PDFont font,
+            float xOffset,
+            float halfW,
+            float halfH) throws IOException {
+<span class="fc bfc" id="L386" title="All 2 branches covered.">        if (page.getLogicalPageNumber().isEmpty()) {</span>
+<span class="fc" id="L387">            return;</span>
+        }
+<span class="fc" id="L389">        int num = page.getLogicalPageNumber().get();</span>
+<span class="fc" id="L390">        String text = String.valueOf(num);</span>
+<span class="fc" id="L391">        float fontSize = 8f;</span>
+<span class="fc" id="L392">        float textWidth = font.getStringWidth(text) / 1000f * fontSize;</span>
+<span class="fc" id="L393">        float margin = 14f;</span>
+<span class="fc" id="L394">        FolioPosition pos = numberingConfig.getFolioPosition();</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        boolean isLeftHalf = xOffset &lt; halfW;</span>
+        float x;
+        float y;
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        if (pos == FolioPosition.BOTTOM_OUTER) {</span>
+<span class="fc" id="L399">            y = margin;</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            x = isLeftHalf ? margin : xOffset + halfW - margin - textWidth;</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">        } else if (pos == FolioPosition.BOTTOM_CENTER) {</span>
+<span class="fc" id="L402">            y = margin;</span>
+<span class="fc" id="L403">            x = xOffset + halfW / 2f - textWidth / 2f;</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        } else if (pos == FolioPosition.BOTTOM_INNER) {</span>
+<span class="fc" id="L405">            y = margin;</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">            x = isLeftHalf ? xOffset + halfW - margin - textWidth : xOffset + margin;</span>
+<span class="fc bfc" id="L407" title="All 2 branches covered.">        } else if (pos == FolioPosition.TOP_OUTER) {</span>
+<span class="fc" id="L408">            y = halfH - margin - fontSize;</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">            x = isLeftHalf ? margin : xOffset + halfW - margin - textWidth;</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">        } else if (pos == FolioPosition.TOP_CENTER) {</span>
+<span class="fc" id="L411">            y = halfH - margin - fontSize;</span>
+<span class="fc" id="L412">            x = xOffset + halfW / 2f - textWidth / 2f;</span>
+        } else {
+            // TOP_INNER (default fallback)
+<span class="fc" id="L415">            y = halfH - margin - fontSize;</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">            x = isLeftHalf ? xOffset + halfW - margin - textWidth : xOffset + margin;</span>
+        }
+<span class="fc" id="L418">        cs.beginText();</span>
+<span class="fc" id="L419">        cs.setFont(font, fontSize);</span>
+<span class="fc" id="L420">        cs.setNonStrokingColor(Color.BLACK);</span>
+<span class="fc" id="L421">        cs.newLineAtOffset(x, y);</span>
+<span class="fc" id="L422">        cs.showText(text);</span>
+<span class="fc" id="L423">        cs.endText();</span>
+<span class="fc" id="L424">    }</span>
+
+    private static PDRectangle bookPageRect(PaperSize size) {
+<span class="fc bfc" id="L427" title="All 7 branches covered.">        return switch (size) {</span>
+<span class="fc" id="L428">            case A4 -&gt; PDRectangle.A4;</span>
+<span class="fc" id="L429">            case A5 -&gt; PDRectangle.A5;</span>
+<span class="fc" id="L430">            case A3 -&gt; PDRectangle.A3;</span>
+<span class="fc" id="L431">            case LETTER -&gt; PDRectangle.LETTER;</span>
+<span class="fc" id="L432">            case LEGAL -&gt; PDRectangle.LEGAL;</span>
+<span class="fc" id="L433">            case HALF_LETTER -&gt; new PDRectangle(396f, 612f);</span>
+<span class="fc" id="L434">            case CUSTOM -&gt; throw new UnsupportedOperationException(</span>
+                    &quot;CUSTOM paper size is not supported in Phase 1&quot;);
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

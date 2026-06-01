@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<licensePluginReport goal="CHECK" timestamp="1780321001477">
+    <module artifactId="quire-bind-batch" groupId="com.maiitsoh.quirebind" version="1.1.0"/>
+    <files>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/QuireBindBatch.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchConfig.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchCreepConfig.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchDefaults.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchJob.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchMarksConfig.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchNumberingConfig.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchPaddingConfig.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/parser/QuireFileParser.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/runner/BatchRunner.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/batch/runner/BatchTemplateRunner.java" result="PRESENT"/>
+        <file path="src/test/java/com/maiitsoh/quirebind/batch/parser/QuireFileParserTest.java" result="PRESENT"/>
+        <file path="src/test/java/com/maiitsoh/quirebind/batch/runner/BatchRunnerTest.java" result="PRESENT"/>
+        <file path="src/test/java/com/maiitsoh/quirebind/batch/runner/BatchTemplateRunnerTest.java" result="PRESENT"/>
+    </files>
+</licensePluginReport>

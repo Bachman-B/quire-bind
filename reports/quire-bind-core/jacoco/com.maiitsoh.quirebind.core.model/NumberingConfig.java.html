@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NumberingConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">NumberingConfig.java</span></div><h1>NumberingConfig.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.Objects;
+
+/**
+ * Controls folio (page number) assignment across the three page zones.
+ *
+ * &lt;p&gt;Zones: front matter (aesthetic + completion front), body (content pages),
+ * rear matter (completion rear + aesthetic rear). The rear matter style is always
+ * {@link FolioStyle#NONE} in Phase 1.
+ */
+public final class NumberingConfig {
+
+    private final FolioStyle frontMatterStyle;
+    private final FolioStyle bodyStyle;
+    private final FolioStyle rearMatterStyle;
+    private final int frontMatterStartNumber;
+    private final int bodyStartNumber;
+    private final int rearMatterStartNumber;
+    private final boolean suppressFirstBodyFolio;
+    private final FolioPosition folioPosition;
+
+<span class="fc" id="L41">    private NumberingConfig(Builder builder) {</span>
+<span class="fc" id="L42">        this.frontMatterStyle = builder.frontMatterStyle;</span>
+<span class="fc" id="L43">        this.bodyStyle = builder.bodyStyle;</span>
+<span class="fc" id="L44">        this.rearMatterStyle = builder.rearMatterStyle;</span>
+<span class="fc" id="L45">        this.frontMatterStartNumber = builder.frontMatterStartNumber;</span>
+<span class="fc" id="L46">        this.bodyStartNumber = builder.bodyStartNumber;</span>
+<span class="fc" id="L47">        this.rearMatterStartNumber = builder.rearMatterStartNumber;</span>
+<span class="fc" id="L48">        this.suppressFirstBodyFolio = builder.suppressFirstBodyFolio;</span>
+<span class="fc" id="L49">        this.folioPosition = builder.folioPosition;</span>
+<span class="fc" id="L50">    }</span>
+
+    /** Returns the folio style for front matter pages. */
+    public FolioStyle getFrontMatterStyle() {
+<span class="fc" id="L54">        return frontMatterStyle;</span>
+    }
+
+    /** Returns the folio style for body (content) pages. */
+    public FolioStyle getBodyStyle() {
+<span class="fc" id="L59">        return bodyStyle;</span>
+    }
+
+    /** Returns the folio style for rear matter pages. Always {@link FolioStyle#NONE} in Phase 1. */
+    public FolioStyle getRearMatterStyle() {
+<span class="fc" id="L64">        return rearMatterStyle;</span>
+    }
+
+    /** Returns the number assigned to the first front matter page. */
+    public int getFrontMatterStartNumber() {
+<span class="fc" id="L69">        return frontMatterStartNumber;</span>
+    }
+
+    /** Returns the number assigned to the first body page. */
+    public int getBodyStartNumber() {
+<span class="fc" id="L74">        return bodyStartNumber;</span>
+    }
+
+    /** Returns the number assigned to the first rear matter page. */
+    public int getRearMatterStartNumber() {
+<span class="fc" id="L79">        return rearMatterStartNumber;</span>
+    }
+
+    /**
+     * Returns true if the folio is suppressed on the first body page.
+     * The page still receives a logical number; only the printed folio is omitted.
+     */
+    public boolean isSuppressFirstBodyFolio() {
+<span class="fc" id="L87">        return suppressFirstBodyFolio;</span>
+    }
+
+    /** Returns the horizontal position of the printed folio. */
+    public FolioPosition getFolioPosition() {
+<span class="fc" id="L92">        return folioPosition;</span>
+    }
+
+    /**
+     * Returns a new builder pre-populated with the values of this instance.
+     *
+     * @return a builder copying all fields from this instance
+     */
+    public Builder toBuilder() {
+<span class="fc" id="L101">        return new Builder()</span>
+<span class="fc" id="L102">                .frontMatterStyle(this.frontMatterStyle)</span>
+<span class="fc" id="L103">                .bodyStyle(this.bodyStyle)</span>
+<span class="fc" id="L104">                .rearMatterStyle(this.rearMatterStyle)</span>
+<span class="fc" id="L105">                .frontMatterStartNumber(this.frontMatterStartNumber)</span>
+<span class="fc" id="L106">                .bodyStartNumber(this.bodyStartNumber)</span>
+<span class="fc" id="L107">                .rearMatterStartNumber(this.rearMatterStartNumber)</span>
+<span class="fc" id="L108">                .suppressFirstBodyFolio(this.suppressFirstBodyFolio)</span>
+<span class="fc" id="L109">                .folioPosition(this.folioPosition);</span>
+    }
+
+    /** Returns a new {@link Builder} with sensible defaults. */
+    public static Builder builder() {
+<span class="fc" id="L114">        return new Builder();</span>
+    }
+
+    /** Builder for {@link NumberingConfig}. */
+    public static final class Builder {
+
+<span class="fc" id="L120">        private FolioStyle frontMatterStyle = FolioStyle.NONE;</span>
+<span class="fc" id="L121">        private FolioStyle bodyStyle = FolioStyle.ARABIC;</span>
+<span class="fc" id="L122">        private FolioStyle rearMatterStyle = FolioStyle.NONE;</span>
+<span class="fc" id="L123">        private int frontMatterStartNumber = 1;</span>
+<span class="fc" id="L124">        private int bodyStartNumber = 1;</span>
+<span class="fc" id="L125">        private int rearMatterStartNumber = 1;</span>
+<span class="fc" id="L126">        private boolean suppressFirstBodyFolio = false;</span>
+<span class="fc" id="L127">        private FolioPosition folioPosition = FolioPosition.BOTTOM_OUTER;</span>
+
+<span class="fc" id="L129">        private Builder() {</span>
+<span class="fc" id="L130">        }</span>
+
+        /**
+         * Sets the front matter folio style.
+         *
+         * @param frontMatterStyle must not be null
+         * @return this builder
+         */
+        public Builder frontMatterStyle(FolioStyle frontMatterStyle) {
+<span class="fc" id="L139">            this.frontMatterStyle = Objects.requireNonNull(frontMatterStyle, &quot;frontMatterStyle&quot;);</span>
+<span class="fc" id="L140">            return this;</span>
+        }
+
+        /**
+         * Sets the body folio style.
+         *
+         * @param bodyStyle must not be null
+         * @return this builder
+         */
+        public Builder bodyStyle(FolioStyle bodyStyle) {
+<span class="fc" id="L150">            this.bodyStyle = Objects.requireNonNull(bodyStyle, &quot;bodyStyle&quot;);</span>
+<span class="fc" id="L151">            return this;</span>
+        }
+
+        /**
+         * Sets the rear matter folio style. Always {@link FolioStyle#NONE} in Phase 1.
+         *
+         * @param rearMatterStyle must not be null
+         * @return this builder
+         */
+        public Builder rearMatterStyle(FolioStyle rearMatterStyle) {
+<span class="fc" id="L161">            this.rearMatterStyle = Objects.requireNonNull(rearMatterStyle, &quot;rearMatterStyle&quot;);</span>
+<span class="fc" id="L162">            return this;</span>
+        }
+
+        /**
+         * Sets the first front matter page number.
+         *
+         * @param frontMatterStartNumber must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if not positive
+         */
+        public Builder frontMatterStartNumber(int frontMatterStartNumber) {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            if (frontMatterStartNumber &lt; 1) {</span>
+<span class="fc" id="L174">                throw new IllegalArgumentException(&quot;frontMatterStartNumber must be &gt;= 1&quot;);</span>
+            }
+<span class="fc" id="L176">            this.frontMatterStartNumber = frontMatterStartNumber;</span>
+<span class="fc" id="L177">            return this;</span>
+        }
+
+        /**
+         * Sets the first body page number.
+         *
+         * @param bodyStartNumber must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if not positive
+         */
+        public Builder bodyStartNumber(int bodyStartNumber) {
+<span class="fc bfc" id="L188" title="All 2 branches covered.">            if (bodyStartNumber &lt; 1) {</span>
+<span class="fc" id="L189">                throw new IllegalArgumentException(&quot;bodyStartNumber must be &gt;= 1&quot;);</span>
+            }
+<span class="fc" id="L191">            this.bodyStartNumber = bodyStartNumber;</span>
+<span class="fc" id="L192">            return this;</span>
+        }
+
+        /**
+         * Sets the first rear matter page number.
+         *
+         * @param rearMatterStartNumber must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if not positive
+         */
+        public Builder rearMatterStartNumber(int rearMatterStartNumber) {
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (rearMatterStartNumber &lt; 1) {</span>
+<span class="fc" id="L204">                throw new IllegalArgumentException(&quot;rearMatterStartNumber must be &gt;= 1&quot;);</span>
+            }
+<span class="fc" id="L206">            this.rearMatterStartNumber = rearMatterStartNumber;</span>
+<span class="fc" id="L207">            return this;</span>
+        }
+
+        /**
+         * Sets whether the printed folio is suppressed on the first body page.
+         *
+         * @param suppressFirstBodyFolio true to suppress
+         * @return this builder
+         */
+        public Builder suppressFirstBodyFolio(boolean suppressFirstBodyFolio) {
+<span class="fc" id="L217">            this.suppressFirstBodyFolio = suppressFirstBodyFolio;</span>
+<span class="fc" id="L218">            return this;</span>
+        }
+
+        /**
+         * Sets the horizontal position of the printed folio.
+         *
+         * @param folioPosition must not be null
+         * @return this builder
+         */
+        public Builder folioPosition(FolioPosition folioPosition) {
+<span class="fc" id="L228">            this.folioPosition = Objects.requireNonNull(folioPosition, &quot;folioPosition&quot;);</span>
+<span class="fc" id="L229">            return this;</span>
+        }
+
+        /** Builds the {@link NumberingConfig}. */
+        public NumberingConfig build() {
+<span class="fc" id="L234">            return new NumberingConfig(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L241">            return true;</span>
+        }
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        if (!(obj instanceof NumberingConfig other)) {</span>
+<span class="fc" id="L244">            return false;</span>
+        }
+<span class="fc bfc" id="L246" title="All 16 branches covered.">        return frontMatterStartNumber == other.frontMatterStartNumber</span>
+                &amp;&amp; bodyStartNumber == other.bodyStartNumber
+                &amp;&amp; rearMatterStartNumber == other.rearMatterStartNumber
+                &amp;&amp; suppressFirstBodyFolio == other.suppressFirstBodyFolio
+                &amp;&amp; frontMatterStyle == other.frontMatterStyle
+                &amp;&amp; bodyStyle == other.bodyStyle
+                &amp;&amp; rearMatterStyle == other.rearMatterStyle
+                &amp;&amp; folioPosition == other.folioPosition;
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L258">        return Objects.hash(frontMatterStyle, bodyStyle, rearMatterStyle,</span>
+<span class="fc" id="L259">                frontMatterStartNumber, bodyStartNumber, rearMatterStartNumber,</span>
+<span class="fc" id="L260">                suppressFirstBodyFolio, folioPosition);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L265">        return &quot;NumberingConfig{&quot;</span>
+                + &quot;frontMatterStyle=&quot; + frontMatterStyle
+                + &quot;, bodyStyle=&quot; + bodyStyle
+                + &quot;, rearMatterStyle=&quot; + rearMatterStyle
+                + &quot;, frontMatterStartNumber=&quot; + frontMatterStartNumber
+                + &quot;, bodyStartNumber=&quot; + bodyStartNumber
+                + &quot;, rearMatterStartNumber=&quot; + rearMatterStartNumber
+                + &quot;, suppressFirstBodyFolio=&quot; + suppressFirstBodyFolio
+                + &quot;, folioPosition=&quot; + folioPosition
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

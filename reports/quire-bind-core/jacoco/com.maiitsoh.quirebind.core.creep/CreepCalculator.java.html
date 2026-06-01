@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreepCalculator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.creep</a> &gt; <span class="el_source">CreepCalculator.java</span></div><h1>CreepCalculator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.creep;
+
+import com.maiitsoh.quirebind.core.model.CreepConfig;
+import com.maiitsoh.quirebind.core.model.CreepSheetResult;
+import com.maiitsoh.quirebind.core.model.ImposedSheet;
+import com.maiitsoh.quirebind.core.model.QuirePage;
+import com.maiitsoh.quirebind.core.model.Signature;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Calculates per-sheet creep amounts for composed signatures.
+ *
+ * &lt;h3&gt;Creep formula&lt;/h3&gt;
+ * For a FOLIO signature with {@code S} sheets, sheet {@code i} (0 = outermost, S-1 = innermost)
+ * has its fore-edge displaced outward by:
+ * &lt;pre&gt;creepMm = sheetIndex × 2 × paperThicknessMm&lt;/pre&gt;
+ *
+ * &lt;p&gt;Paper thickness is taken directly from {@link CreepConfig#getPaperThicknessMm()}.
+ * If absent, it is derived from {@link CreepConfig#getPaperWeightGsm()} using the
+ * approximation {@code thicknessMm = gsm × 0.00125} (80 gsm → 0.10 mm).
+ *
+ * &lt;p&gt;If neither thickness nor weight is set the config is returned unchanged.
+ * Available spine margins (Phase 2) are not analysed here; all {@link CreepSheetResult}
+ * instances are produced without margin data in Phase 1.
+ */
+public final class CreepCalculator {
+
+    static final double GSM_TO_MM = 0.00125;
+
+    private CreepCalculator() {
+    }
+
+    /**
+     * Returns an updated {@link CreepConfig} with {@code sheetResults} and
+     * {@code calculatedCreepMm} populated.
+     *
+     * @param signatures composed signatures; must not be null
+     * @param config     existing creep config supplying paper properties; must not be null
+     * @return updated config, or the original config if thickness cannot be determined
+     */
+    public static CreepConfig calculate(List&lt;Signature&gt; signatures, CreepConfig config) {
+<span class="fc" id="L63">        Objects.requireNonNull(signatures, &quot;signatures&quot;);</span>
+<span class="fc" id="L64">        Objects.requireNonNull(config, &quot;config&quot;);</span>
+
+        double thicknessMm;
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (config.getPaperThicknessMm().isPresent()) {</span>
+<span class="fc" id="L68">            thicknessMm = config.getPaperThicknessMm().get();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        } else if (config.getPaperWeightGsm().isPresent()) {</span>
+<span class="fc" id="L70">            thicknessMm = config.getPaperWeightGsm().get() * GSM_TO_MM;</span>
+        } else {
+<span class="fc" id="L72">            return config;</span>
+        }
+
+<span class="fc" id="L75">        List&lt;CreepSheetResult&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L76">        double maxCreep = 0.0;</span>
+
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (Signature sig : signatures) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            for (ImposedSheet sheet : sig.getSheets()) {</span>
+<span class="fc" id="L80">                double creep = sheet.getSheetIndex() * 2.0 * thicknessMm;</span>
+<span class="fc" id="L81">                results.add(CreepSheetResult.builder()</span>
+<span class="fc" id="L82">                        .sheetIndex(sheet.getSheetIndex())</span>
+<span class="fc" id="L83">                        .creepMm(creep)</span>
+<span class="fc" id="L84">                        .pageNumbers(collectPageNumbers(sheet))</span>
+<span class="fc" id="L85">                        .build());</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">                if (creep &gt; maxCreep) {</span>
+<span class="fc" id="L87">                    maxCreep = creep;</span>
+                }
+<span class="fc" id="L89">            }</span>
+<span class="fc" id="L90">        }</span>
+
+<span class="fc" id="L92">        return config.toBuilder()</span>
+<span class="fc" id="L93">                .sheetResults(results)</span>
+<span class="fc" id="L94">                .calculatedCreepMm(maxCreep)</span>
+<span class="fc" id="L95">                .build();</span>
+    }
+
+    private static List&lt;Integer&gt; collectPageNumbers(ImposedSheet sheet) {
+<span class="fc" id="L99">        List&lt;Integer&gt; nums = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (QuirePage p : sheet.getFrontPages()) {</span>
+<span class="fc" id="L101">            p.getLogicalPageNumber().ifPresent(nums::add);</span>
+<span class="fc" id="L102">        }</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        for (QuirePage p : sheet.getBackPages()) {</span>
+<span class="fc" id="L104">            p.getLogicalPageNumber().ifPresent(nums::add);</span>
+<span class="fc" id="L105">        }</span>
+<span class="fc" id="L106">        return nums;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

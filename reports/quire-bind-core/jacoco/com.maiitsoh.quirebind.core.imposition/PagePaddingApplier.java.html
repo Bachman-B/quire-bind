@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PagePaddingApplier.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.imposition</a> &gt; <span class="el_source">PagePaddingApplier.java</span></div><h1>PagePaddingApplier.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.imposition;
+
+import com.maiitsoh.quirebind.core.model.ImpositionGroup;
+import com.maiitsoh.quirebind.core.model.PaddingConfig;
+import com.maiitsoh.quirebind.core.model.PageType;
+import com.maiitsoh.quirebind.core.model.QuirePage;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Inserts padding pages around the content pages according to the project's
+ * {@link PaddingConfig} and {@link ImpositionGroup}.
+ *
+ * &lt;p&gt;Padding is applied in this order:
+ * &lt;ol&gt;
+ *   &lt;li&gt;Aesthetic-front pages prepended to the sequence&lt;/li&gt;
+ *   &lt;li&gt;Completion-front blanks prepended (Group C only)&lt;/li&gt;
+ *   &lt;li&gt;Content pages&lt;/li&gt;
+ *   &lt;li&gt;Completion-rear blanks appended (Group C only)&lt;/li&gt;
+ *   &lt;li&gt;Aesthetic-rear pages appended to the sequence&lt;/li&gt;
+ *   &lt;li&gt;Filler blanks appended to bring total to a multiple of 4 (Groups A and B)&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * &lt;p&gt;Physical positions are reindexed after all pages are assembled.
+ */
+public final class PagePaddingApplier {
+
+    private PagePaddingApplier() {
+    }
+
+    /**
+     * Returns a new padded list of pages.
+     *
+     * @param contentPages source pages; must not be null
+     * @param config       padding configuration; must not be null
+     * @param group        imposition group; must not be null
+     * @return an immutable list of pages in physical order, positions reindexed from 0
+     */
+    public static List&lt;QuirePage&gt; pad(
+            List&lt;QuirePage&gt; contentPages,
+            PaddingConfig config,
+            ImpositionGroup group) {
+<span class="fc" id="L63">        Objects.requireNonNull(contentPages, &quot;contentPages&quot;);</span>
+<span class="fc" id="L64">        Objects.requireNonNull(config, &quot;config&quot;);</span>
+<span class="fc" id="L65">        Objects.requireNonNull(group, &quot;group&quot;);</span>
+
+<span class="fc" id="L67">        List&lt;QuirePage&gt; result = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt; config.getAestheticFront(); i++) {</span>
+<span class="fc" id="L70">            result.add(blankPage(PageType.AESTHETIC));</span>
+        }
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (group == ImpositionGroup.C) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            for (int i = 0; i &lt; config.getCompletionFront(); i++) {</span>
+<span class="fc" id="L74">                result.add(blankPage(PageType.COMPLETION_BLANK));</span>
+            }
+        }
+
+<span class="fc" id="L78">        result.addAll(contentPages);</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (group == ImpositionGroup.C) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            for (int i = 0; i &lt; config.getCompletionRear(); i++) {</span>
+<span class="fc" id="L82">                result.add(blankPage(PageType.COMPLETION_BLANK));</span>
+            }
+        }
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; config.getAestheticRear(); i++) {</span>
+<span class="fc" id="L86">            result.add(blankPage(PageType.AESTHETIC));</span>
+        }
+
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (group != ImpositionGroup.C) {</span>
+<span class="fc" id="L90">            int remainder = result.size() % 4;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            int fillers = (remainder == 0) ? 0 : (4 - remainder);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (int i = 0; i &lt; fillers; i++) {</span>
+<span class="fc" id="L93">                result.add(blankPage(PageType.FILLER_BLANK));</span>
+            }
+        }
+
+<span class="fc" id="L97">        return reindex(result);</span>
+    }
+
+    private static QuirePage blankPage(PageType type) {
+<span class="fc" id="L101">        return QuirePage.builder().physicalPosition(0).pageType(type).build();</span>
+    }
+
+    private static List&lt;QuirePage&gt; reindex(List&lt;QuirePage&gt; pages) {
+<span class="fc" id="L105">        List&lt;QuirePage&gt; out = new ArrayList&lt;&gt;(pages.size());</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (int i = 0; i &lt; pages.size(); i++) {</span>
+<span class="fc" id="L107">            QuirePage p = pages.get(i);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            out.add(p.getPhysicalPosition() == i ? p : p.toBuilder().physicalPosition(i).build());</span>
+        }
+<span class="fc" id="L110">        return List.copyOf(out);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

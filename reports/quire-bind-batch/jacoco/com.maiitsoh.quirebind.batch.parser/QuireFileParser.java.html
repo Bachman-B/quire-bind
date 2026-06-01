@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuireFileParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Batch</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.batch.parser</a> &gt; <span class="el_source">QuireFileParser.java</span></div><h1>QuireFileParser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.batch.parser;
+
+import com.maiitsoh.quirebind.batch.model.BatchConfig;
+import com.maiitsoh.quirebind.batch.model.BatchCreepConfig;
+import com.maiitsoh.quirebind.batch.model.BatchDefaults;
+import com.maiitsoh.quirebind.batch.model.BatchJob;
+import com.maiitsoh.quirebind.batch.model.BatchMarksConfig;
+import com.maiitsoh.quirebind.batch.model.BatchNumberingConfig;
+import com.maiitsoh.quirebind.batch.model.BatchPaddingConfig;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Parses a {@code .quire} YAML batch configuration file into a {@link BatchConfig}.
+ *
+ * &lt;p&gt;Unknown keys are silently ignored. Missing optional keys use safe defaults.
+ * The only required fields are each job's {@code name}, {@code source},
+ * {@code output}, and {@code technique}.
+ */
+public final class QuireFileParser {
+
+    private QuireFileParser() {
+    }
+
+    /**
+     * Parses the given {@code .quire} file.
+     *
+     * @param configPath path to the {@code .quire} file; must not be null
+     * @return the parsed configuration
+     * @throws IOException if the file cannot be read or contains invalid YAML
+     */
+    public static BatchConfig parse(Path configPath) throws IOException {
+<span class="fc" id="L59">        Objects.requireNonNull(configPath, &quot;configPath&quot;);</span>
+<span class="fc" id="L60">        String content = Files.readString(configPath, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L61">        return parseString(content);</span>
+    }
+
+    /**
+     * Parses a {@code .quire} file from its string content.
+     *
+     * @param content the YAML content; must not be null
+     * @return the parsed configuration
+     * @throws IOException if the content is not valid YAML
+     */
+    public static BatchConfig parseString(String content) throws IOException {
+<span class="fc" id="L72">        Objects.requireNonNull(content, &quot;content&quot;);</span>
+<span class="fc" id="L73">        Yaml yaml = new Yaml();</span>
+        Map&lt;String, Object&gt; root;
+        try {
+<span class="fc" id="L76">            root = yaml.load(content);</span>
+<span class="nc" id="L77">        } catch (Exception e) {</span>
+<span class="nc" id="L78">            throw new IOException(&quot;Failed to parse .quire YAML: &quot; + e.getMessage(), e);</span>
+<span class="fc" id="L79">        }</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (root == null) {</span>
+<span class="nc" id="L81">            root = Map.of();</span>
+        }
+<span class="fc" id="L83">        String version = str(root, &quot;quire_version&quot;);</span>
+<span class="fc" id="L84">        BatchDefaults defaults = parseDefaults(map(root, &quot;defaults&quot;));</span>
+<span class="fc" id="L85">        List&lt;BatchJob&gt; jobs = parseJobs(list(root, &quot;jobs&quot;));</span>
+<span class="fc" id="L86">        return new BatchConfig(version, defaults, jobs);</span>
+    }
+
+    private static BatchDefaults parseDefaults(Map&lt;String, Object&gt; m) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (m == null) {</span>
+<span class="fc" id="L91">            return BatchDefaults.factoryDefault();</span>
+        }
+<span class="fc" id="L93">        return new BatchDefaults(</span>
+<span class="fc" id="L94">                strOr(m, &quot;technique&quot;, &quot;sewn_signatures&quot;),</span>
+<span class="fc" id="L95">                intOr(m, &quot;signature_size&quot;, 4),</span>
+<span class="fc" id="L96">                strOr(m, &quot;reading_direction&quot;, &quot;ltr&quot;),</span>
+<span class="fc" id="L97">                strOr(m, &quot;paper_size&quot;, &quot;a4&quot;),</span>
+<span class="fc" id="L98">                parseNumbering(map(m, &quot;numbering&quot;)),</span>
+<span class="fc" id="L99">                parseMarks(map(m, &quot;marks&quot;)));</span>
+    }
+
+    private static List&lt;BatchJob&gt; parseJobs(List&lt;Object&gt; rawJobs) {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (rawJobs == null) {</span>
+<span class="fc" id="L104">            return List.of();</span>
+        }
+<span class="fc" id="L106">        List&lt;BatchJob&gt; jobs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (Object item : rawJobs) {</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">            if (item instanceof Map&lt;?, ?&gt; rawMap) {</span>
+                @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L110">                Map&lt;String, Object&gt; m = (Map&lt;String, Object&gt;) rawMap;</span>
+<span class="fc" id="L111">                jobs.add(parseJob(m));</span>
+            }
+<span class="fc" id="L113">        }</span>
+<span class="fc" id="L114">        return List.copyOf(jobs);</span>
+    }
+
+    private static BatchJob parseJob(Map&lt;String, Object&gt; m) {
+<span class="fc" id="L118">        return new BatchJob(</span>
+<span class="fc" id="L119">                str(m, &quot;name&quot;),</span>
+<span class="fc" id="L120">                str(m, &quot;source&quot;),</span>
+<span class="fc" id="L121">                str(m, &quot;output&quot;),</span>
+<span class="fc" id="L122">                str(m, &quot;technique&quot;),</span>
+<span class="fc" id="L123">                strOr(m, &quot;layout&quot;, &quot;folio&quot;),</span>
+<span class="fc" id="L124">                intOr(m, &quot;signature_size&quot;, 0),</span>
+<span class="fc" id="L125">                str(m, &quot;reading_direction&quot;),</span>
+<span class="fc" id="L126">                str(m, &quot;paper_size&quot;),</span>
+<span class="fc" id="L127">                parsePadding(map(m, &quot;padding&quot;)),</span>
+<span class="fc" id="L128">                parseNumbering(map(m, &quot;numbering&quot;)),</span>
+<span class="fc" id="L129">                parseCreep(map(m, &quot;creep&quot;)),</span>
+<span class="fc" id="L130">                parseMarks(map(m, &quot;marks&quot;)));</span>
+    }
+
+    private static BatchPaddingConfig parsePadding(Map&lt;String, Object&gt; m) {
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (m == null) {</span>
+<span class="fc" id="L135">            return BatchPaddingConfig.NONE;</span>
+        }
+<span class="fc" id="L137">        return new BatchPaddingConfig(</span>
+<span class="fc" id="L138">                intOr(m, &quot;aesthetic_front&quot;, 0),</span>
+<span class="fc" id="L139">                intOr(m, &quot;aesthetic_rear&quot;, 0),</span>
+<span class="fc" id="L140">                intOr(m, &quot;completion_front&quot;, 0),</span>
+<span class="fc" id="L141">                intOr(m, &quot;completion_rear&quot;, 0));</span>
+    }
+
+    private static BatchNumberingConfig parseNumbering(Map&lt;String, Object&gt; m) {
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (m == null) {</span>
+<span class="fc" id="L146">            return BatchNumberingConfig.DEFAULT;</span>
+        }
+<span class="fc" id="L148">        return new BatchNumberingConfig(</span>
+<span class="fc" id="L149">                str(m, &quot;front_matter_style&quot;),</span>
+<span class="fc" id="L150">                strOr(m, &quot;body_style&quot;, &quot;arabic&quot;),</span>
+<span class="fc" id="L151">                intOr(m, &quot;body_start&quot;, 1),</span>
+<span class="fc" id="L152">                boolOr(m, &quot;suppress_first_body_folio&quot;, true));</span>
+    }
+
+    private static BatchCreepConfig parseCreep(Map&lt;String, Object&gt; m) {
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (m == null) {</span>
+<span class="fc" id="L157">            return BatchCreepConfig.NONE;</span>
+        }
+<span class="fc" id="L159">        return new BatchCreepConfig(</span>
+<span class="fc" id="L160">                doubleOrNull(m, &quot;paper_weight_gsm&quot;),</span>
+<span class="fc" id="L161">                doubleOrNull(m, &quot;paper_thickness_mm&quot;));</span>
+    }
+
+    private static BatchMarksConfig parseMarks(Map&lt;String, Object&gt; m) {
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (m == null) {</span>
+<span class="fc" id="L166">            return BatchMarksConfig.DEFAULT;</span>
+        }
+<span class="fc" id="L168">        return new BatchMarksConfig(</span>
+<span class="fc" id="L169">                boolOr(m, &quot;fold_lines&quot;, true),</span>
+<span class="fc" id="L170">                boolOr(m, &quot;signature_proof_markers&quot;, true));</span>
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static String str(Map&lt;String, Object&gt; m, String key) {
+<span class="fc" id="L176">        Object v = m.get(key);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        return v != null ? v.toString() : null;</span>
+    }
+
+    private static String strOr(Map&lt;String, Object&gt; m, String key, String fallback) {
+<span class="fc" id="L181">        String v = str(m, key);</span>
+<span class="pc bpc" id="L182" title="1 of 4 branches missed.">        return (v != null &amp;&amp; !v.isBlank()) ? v : fallback;</span>
+    }
+
+    private static int intOr(Map&lt;String, Object&gt; m, String key, int fallback) {
+<span class="fc" id="L186">        Object v = m.get(key);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        if (v instanceof Number n) {</span>
+<span class="fc" id="L188">            return n.intValue();</span>
+        }
+<span class="fc" id="L190">        return fallback;</span>
+    }
+
+    private static boolean boolOr(Map&lt;String, Object&gt; m, String key, boolean fallback) {
+<span class="fc" id="L194">        Object v = m.get(key);</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (v instanceof Boolean b) {</span>
+<span class="fc" id="L196">            return b;</span>
+        }
+<span class="fc" id="L198">        return fallback;</span>
+    }
+
+    private static Double doubleOrNull(Map&lt;String, Object&gt; m, String key) {
+<span class="fc" id="L202">        Object v = m.get(key);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        if (v instanceof Number n) {</span>
+<span class="fc" id="L204">            return n.doubleValue();</span>
+        }
+<span class="fc" id="L206">        return null;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static Map&lt;String, Object&gt; map(Map&lt;String, Object&gt; m, String key) {
+<span class="fc" id="L211">        Object v = m.get(key);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (v instanceof Map&lt;?, ?&gt;) {</span>
+<span class="fc" id="L213">            return (Map&lt;String, Object&gt;) v;</span>
+        }
+<span class="fc" id="L215">        return null;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static List&lt;Object&gt; list(Map&lt;String, Object&gt; m, String key) {
+<span class="fc" id="L220">        Object v = m.get(key);</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (v instanceof List&lt;?&gt;) {</span>
+<span class="fc" id="L222">            return (List&lt;Object&gt;) v;</span>
+        }
+<span class="fc" id="L224">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

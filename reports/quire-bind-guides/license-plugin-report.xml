@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<licensePluginReport goal="CHECK" timestamp="1780320997565">
+    <module artifactId="quire-bind-guides" groupId="com.maiitsoh.quirebind" version="1.1.0"/>
+    <files>
+        <file path="src/main/java/com/maiitsoh/quirebind/guides/loader/GuideLoader.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/guides/model/BindingGuide.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/guides/model/GuideMetadata.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/guides/model/GuideSection.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/guides/renderer/MarkdownToHtml.java" result="PRESENT"/>
+        <file path="src/main/java/com/maiitsoh/quirebind/guides/validator/GuideValidator.java" result="PRESENT"/>
+        <file path="src/test/java/com/maiitsoh/quirebind/guides/loader/GuideLoaderTest.java" result="PRESENT"/>
+        <file path="src/test/java/com/maiitsoh/quirebind/guides/renderer/MarkdownToHtmlTest.java" result="PRESENT"/>
+        <file path="src/test/java/com/maiitsoh/quirebind/guides/validator/GuideValidatorTest.java" result="PRESENT"/>
+    </files>
+</licensePluginReport>

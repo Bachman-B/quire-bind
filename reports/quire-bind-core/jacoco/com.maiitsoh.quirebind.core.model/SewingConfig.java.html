@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SewingConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">SewingConfig.java</span></div><h1>SewingConfig.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.Objects;
+
+/**
+ * Configuration for sewing hole placement along the spine.
+ *
+ * &lt;p&gt;Two styles are supported:
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;SIMPLE&lt;/b&gt; — holes evenly distributed between end margins; outermost holes act as
+ *       kettle-stitch anchors. Controlled by {@link #getHoleCount()} and
+ *       {@link #getEndMarginMm()}.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;BANDED&lt;/b&gt; — kettle stitches at head and tail of spine, with pairs of holes
+ *       straddling each band/tape. Total holes = 2 + 2 × bandCount. Controlled by
+ *       {@link #getBandCount()}, {@link #getBandWidthMm()}, and {@link #getEndMarginMm()}.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public final class SewingConfig {
+
+    /** Determines how holes are distributed along the spine. */
+<span class="fc" id="L39">    public enum SewingStyle {</span>
+        /** Evenly-spaced holes; outermost holes act as kettle stitches. */
+<span class="fc" id="L41">        SIMPLE,</span>
+        /** Kettle stitches at head and tail; pairs of holes straddling each band/tape. */
+<span class="fc" id="L43">        BANDED</span>
+    }
+
+<span class="fc" id="L46">    private static final SewingStyle DEFAULT_STYLE = SewingStyle.SIMPLE;</span>
+    private static final int DEFAULT_HOLE_COUNT = 5;
+    private static final double DEFAULT_END_MARGIN_MM = 15.0;
+    private static final int DEFAULT_BAND_COUNT = 3;
+    private static final double DEFAULT_BAND_WIDTH_MM = 10.0;
+
+    private final SewingStyle style;
+    private final int holeCount;
+    private final double endMarginMm;
+    private final int bandCount;
+    private final double bandWidthMm;
+
+<span class="fc" id="L58">    private SewingConfig(Builder builder) {</span>
+<span class="fc" id="L59">        this.style = builder.style;</span>
+<span class="fc" id="L60">        this.holeCount = builder.holeCount;</span>
+<span class="fc" id="L61">        this.endMarginMm = builder.endMarginMm;</span>
+<span class="fc" id="L62">        this.bandCount = builder.bandCount;</span>
+<span class="fc" id="L63">        this.bandWidthMm = builder.bandWidthMm;</span>
+<span class="fc" id="L64">    }</span>
+
+    /** Returns a {@link SewingConfig} with default values (SIMPLE, 5 holes, 15 mm end margin). */
+    public static SewingConfig defaults() {
+<span class="fc" id="L68">        return builder().build();</span>
+    }
+
+    /** Returns the sewing style. */
+    public SewingStyle getStyle() {
+<span class="fc" id="L73">        return style;</span>
+    }
+
+    /** Returns the total number of sewing holes (SIMPLE mode). */
+    public int getHoleCount() {
+<span class="fc" id="L78">        return holeCount;</span>
+    }
+
+    /** Returns the distance in mm from head/tail of the spine to the outermost hole. */
+    public double getEndMarginMm() {
+<span class="fc" id="L83">        return endMarginMm;</span>
+    }
+
+    /** Returns the number of bands/tapes (BANDED mode). */
+    public int getBandCount() {
+<span class="fc" id="L88">        return bandCount;</span>
+    }
+
+    /** Returns the band/tape width in mm (BANDED mode). */
+    public double getBandWidthMm() {
+<span class="fc" id="L93">        return bandWidthMm;</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L98">        return new Builder();</span>
+    }
+
+    /** Builder for {@link SewingConfig}. */
+    public static final class Builder {
+
+<span class="fc" id="L104">        private SewingStyle style = DEFAULT_STYLE;</span>
+<span class="fc" id="L105">        private int holeCount = DEFAULT_HOLE_COUNT;</span>
+<span class="fc" id="L106">        private double endMarginMm = DEFAULT_END_MARGIN_MM;</span>
+<span class="fc" id="L107">        private int bandCount = DEFAULT_BAND_COUNT;</span>
+<span class="fc" id="L108">        private double bandWidthMm = DEFAULT_BAND_WIDTH_MM;</span>
+
+<span class="fc" id="L110">        private Builder() {</span>
+<span class="fc" id="L111">        }</span>
+
+        /**
+         * Sets the sewing style.
+         *
+         * @param style must not be null
+         * @return this builder
+         */
+        public Builder style(SewingStyle style) {
+<span class="fc" id="L120">            Objects.requireNonNull(style, &quot;style&quot;);</span>
+<span class="fc" id="L121">            this.style = style;</span>
+<span class="fc" id="L122">            return this;</span>
+        }
+
+        /**
+         * Sets the number of sewing holes (SIMPLE mode).
+         *
+         * @param holeCount must be at least 2
+         * @return this builder
+         * @throws IllegalArgumentException if {@code holeCount &lt; 2}
+         */
+        public Builder holeCount(int holeCount) {
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (holeCount &lt; 2) {</span>
+<span class="fc" id="L134">                throw new IllegalArgumentException(&quot;holeCount must be &gt;= 2, got: &quot; + holeCount);</span>
+            }
+<span class="fc" id="L136">            this.holeCount = holeCount;</span>
+<span class="fc" id="L137">            return this;</span>
+        }
+
+        /**
+         * Sets the end margin in millimetres.
+         *
+         * @param endMarginMm must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if {@code endMarginMm &lt;= 0}
+         */
+        public Builder endMarginMm(double endMarginMm) {
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (endMarginMm &lt;= 0) {</span>
+<span class="fc" id="L149">                throw new IllegalArgumentException(</span>
+                        &quot;endMarginMm must be &gt; 0, got: &quot; + endMarginMm);
+            }
+<span class="fc" id="L152">            this.endMarginMm = endMarginMm;</span>
+<span class="fc" id="L153">            return this;</span>
+        }
+
+        /**
+         * Sets the number of bands/tapes (BANDED mode).
+         *
+         * @param bandCount must be at least 1
+         * @return this builder
+         * @throws IllegalArgumentException if {@code bandCount &lt; 1}
+         */
+        public Builder bandCount(int bandCount) {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (bandCount &lt; 1) {</span>
+<span class="fc" id="L165">                throw new IllegalArgumentException(&quot;bandCount must be &gt;= 1, got: &quot; + bandCount);</span>
+            }
+<span class="fc" id="L167">            this.bandCount = bandCount;</span>
+<span class="fc" id="L168">            return this;</span>
+        }
+
+        /**
+         * Sets the band/tape width in millimetres (BANDED mode).
+         *
+         * @param bandWidthMm must be positive
+         * @return this builder
+         * @throws IllegalArgumentException if {@code bandWidthMm &lt;= 0}
+         */
+        public Builder bandWidthMm(double bandWidthMm) {
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (bandWidthMm &lt;= 0) {</span>
+<span class="fc" id="L180">                throw new IllegalArgumentException(</span>
+                        &quot;bandWidthMm must be &gt; 0, got: &quot; + bandWidthMm);
+            }
+<span class="fc" id="L183">            this.bandWidthMm = bandWidthMm;</span>
+<span class="fc" id="L184">            return this;</span>
+        }
+
+        /** Builds the {@link SewingConfig}. */
+        public SewingConfig build() {
+<span class="fc" id="L189">            return new SewingConfig(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L196">            return true;</span>
+        }
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        if (!(obj instanceof SewingConfig other)) {</span>
+<span class="fc" id="L199">            return false;</span>
+        }
+<span class="fc bfc" id="L201" title="All 4 branches covered.">        return style == other.style</span>
+                &amp;&amp; holeCount == other.holeCount
+<span class="fc bfc" id="L203" title="All 4 branches covered.">                &amp;&amp; Double.compare(endMarginMm, other.endMarginMm) == 0</span>
+                &amp;&amp; bandCount == other.bandCount
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                &amp;&amp; Double.compare(bandWidthMm, other.bandWidthMm) == 0;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L210">        return Objects.hash(style, holeCount, endMarginMm, bandCount, bandWidthMm);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L215">        return &quot;SewingConfig{&quot;</span>
+                + &quot;style=&quot; + style
+                + &quot;, holeCount=&quot; + holeCount
+                + &quot;, endMarginMm=&quot; + endMarginMm
+                + &quot;, bandCount=&quot; + bandCount
+                + &quot;, bandWidthMm=&quot; + bandWidthMm
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

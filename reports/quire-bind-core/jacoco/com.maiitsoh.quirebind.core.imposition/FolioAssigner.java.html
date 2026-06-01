@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FolioAssigner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.imposition</a> &gt; <span class="el_source">FolioAssigner.java</span></div><h1>FolioAssigner.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.imposition;
+
+import com.maiitsoh.quirebind.core.model.FolioStyle;
+import com.maiitsoh.quirebind.core.model.NumberingConfig;
+import com.maiitsoh.quirebind.core.model.PageType;
+import com.maiitsoh.quirebind.core.model.QuirePage;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Assigns logical page numbers (folios) to a padded page list using a
+ * {@link NumberingConfig}.
+ *
+ * &lt;p&gt;Page zones are identified structurally:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Front matter: leading AESTHETIC and COMPLETION_BLANK pages before the first CONTENT page&lt;/li&gt;
+ *   &lt;li&gt;Body: all CONTENT pages&lt;/li&gt;
+ *   &lt;li&gt;Rear matter: trailing COMPLETION_BLANK and AESTHETIC pages after the last CONTENT page&lt;/li&gt;
+ *   &lt;li&gt;FILLER_BLANK pages never receive a folio&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;If there are no CONTENT pages, all pages are returned without folios.
+ */
+public final class FolioAssigner {
+
+    private FolioAssigner() {
+    }
+
+    /**
+     * Returns a new list with logical page numbers assigned according to {@code config}.
+     *
+     * @param pages  padded page list; must not be null
+     * @param config numbering configuration; must not be null
+     * @return an immutable list with the same physical positions and folio numbers added
+     */
+    public static List&lt;QuirePage&gt; assign(List&lt;QuirePage&gt; pages, NumberingConfig config) {
+<span class="fc" id="L57">        Objects.requireNonNull(pages, &quot;pages&quot;);</span>
+<span class="fc" id="L58">        Objects.requireNonNull(config, &quot;config&quot;);</span>
+
+<span class="fc" id="L60">        int firstContent = -1;</span>
+<span class="fc" id="L61">        int lastContent = -1;</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (int i = 0; i &lt; pages.size(); i++) {</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (pages.get(i).getPageType() == PageType.CONTENT) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">                if (firstContent &lt; 0) {</span>
+<span class="fc" id="L65">                    firstContent = i;</span>
+                }
+<span class="fc" id="L67">                lastContent = i;</span>
+            }
+        }
+
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (firstContent &lt; 0) {</span>
+<span class="fc" id="L72">            return List.copyOf(pages);</span>
+        }
+
+<span class="fc" id="L75">        List&lt;QuirePage&gt; result = new ArrayList&lt;&gt;(pages.size());</span>
+<span class="fc" id="L76">        int frontCounter = config.getFrontMatterStartNumber();</span>
+<span class="fc" id="L77">        int bodyCounter = config.getBodyStartNumber();</span>
+<span class="fc" id="L78">        int rearCounter = config.getRearMatterStartNumber();</span>
+<span class="fc" id="L79">        boolean firstBody = true;</span>
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; pages.size(); i++) {</span>
+<span class="fc" id="L82">            QuirePage page = pages.get(i);</span>
+<span class="fc" id="L83">            PageType type = page.getPageType();</span>
+
+<span class="fc bfc" id="L85" title="All 4 branches covered.">            if (type == PageType.FILLER_BLANK || type == PageType.COMPLETION_BLANK) {</span>
+<span class="fc" id="L86">                result.add(page);</span>
+<span class="fc" id="L87">                continue;</span>
+            }
+
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            boolean isFrontMatter = i &lt; firstContent;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            boolean isBody = type == PageType.CONTENT;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            boolean isRearMatter = i &gt; lastContent;</span>
+
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (isFrontMatter) {</span>
+<span class="fc" id="L95">                Integer folio = nextFolio(config.getFrontMatterStyle(), frontCounter);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                result.add(folio != null ? page.toBuilder().logicalPageNumber(folio).build() : page);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                if (folio != null) {</span>
+<span class="fc" id="L98">                    frontCounter++;</span>
+                }
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            } else if (isBody) {</span>
+<span class="fc" id="L101">                Integer folio = nextFolio(config.getBodyStyle(), bodyCounter);</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">                boolean suppress = firstBody &amp;&amp; config.isSuppressFirstBodyFolio();</span>
+<span class="fc bfc" id="L103" title="All 4 branches covered.">                result.add(folio != null &amp;&amp; !suppress</span>
+<span class="fc" id="L104">                        ? page.toBuilder().logicalPageNumber(folio).build()</span>
+<span class="fc" id="L105">                        : page);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                if (folio != null) {</span>
+<span class="fc" id="L107">                    bodyCounter++;</span>
+                }
+<span class="fc" id="L109">                firstBody = false;</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            } else if (isRearMatter) {</span>
+<span class="fc" id="L111">                Integer folio = nextFolio(config.getRearMatterStyle(), rearCounter);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                result.add(folio != null ? page.toBuilder().logicalPageNumber(folio).build() : page);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">                if (folio != null) {</span>
+<span class="fc" id="L114">                    rearCounter++;</span>
+                }
+<span class="fc" id="L116">            } else {</span>
+<span class="fc" id="L117">                result.add(page);</span>
+            }
+        }
+
+<span class="fc" id="L121">        return List.copyOf(result);</span>
+    }
+
+    private static Integer nextFolio(FolioStyle style, int counter) {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        return style == FolioStyle.NONE ? null : counter;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TestPdfGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Test</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.test.util</a> &gt; <span class="el_source">TestPdfGenerator.java</span></div><h1>TestPdfGenerator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.test.util;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+/**
+ * Generates test PDFs with one large page number per page for use in system tests.
+ *
+ * &lt;p&gt;Each page is A4 portrait and displays its 1-based page number at a fixed location
+ * in 72-point Helvetica Bold — large enough to survive scaling and be reliably extracted
+ * by PDFBox's text stripper.
+ */
+public final class TestPdfGenerator {
+
+    private TestPdfGenerator() {
+    }
+
+    /**
+     * Creates a PDF with {@code pageCount} numbered A4 pages and saves it to {@code outputPath}.
+     *
+     * @param pageCount  number of pages to generate; must be positive
+     * @param outputPath destination path; must not be null
+     * @return {@code outputPath}, as a convenience for chaining
+     * @throws IOException              if the file cannot be written
+     * @throws IllegalArgumentException if {@code pageCount} is not positive
+     */
+    public static Path generate(int pageCount, Path outputPath) throws IOException {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (pageCount &lt;= 0) {</span>
+<span class="nc" id="L54">            throw new IllegalArgumentException(&quot;pageCount must be positive&quot;);</span>
+        }
+<span class="fc" id="L56">        try (PDDocument doc = new PDDocument()) {</span>
+<span class="fc" id="L57">            PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (int i = 0; i &lt; pageCount; i++) {</span>
+<span class="fc" id="L59">                PDPage page = new PDPage(PDRectangle.A4);</span>
+<span class="fc" id="L60">                doc.addPage(page);</span>
+<span class="fc" id="L61">                try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {</span>
+<span class="fc" id="L62">                    cs.beginText();</span>
+<span class="fc" id="L63">                    cs.setFont(font, 72);</span>
+<span class="fc" id="L64">                    cs.newLineAtOffset(200, 400);</span>
+<span class="fc" id="L65">                    cs.showText(String.valueOf(i + 1));</span>
+<span class="fc" id="L66">                    cs.endText();</span>
+                }
+            }
+<span class="fc" id="L69">            doc.save(outputPath.toFile());</span>
+        }
+<span class="fc" id="L71">        return outputPath;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

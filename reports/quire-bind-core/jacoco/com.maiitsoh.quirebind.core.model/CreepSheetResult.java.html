@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreepSheetResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Core</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.core.model</a> &gt; <span class="el_source">CreepSheetResult.java</span></div><h1>CreepSheetResult.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.core.model;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Creep calculation result for one sheet position within a signature.
+ *
+ * &lt;p&gt;Computed by {@code CreepCalculator}. One instance per sheet position, where
+ * sheet index 0 is the outermost sheet (zero creep) and the highest index is the
+ * innermost sheet (maximum creep).
+ */
+public final class CreepSheetResult {
+
+    private final int sheetIndex;
+    private final double creepMm;
+    private final List&lt;Integer&gt; pageNumbers;
+    private final Optional&lt;Double&gt; availableSpineMarginMm;
+    private final boolean marginWarning;
+    private final double marginDeficitMm;
+
+<span class="fc" id="L41">    private CreepSheetResult(Builder builder) {</span>
+<span class="fc" id="L42">        this.sheetIndex = builder.sheetIndex;</span>
+<span class="fc" id="L43">        this.creepMm = builder.creepMm;</span>
+<span class="fc" id="L44">        this.pageNumbers = List.copyOf(builder.pageNumbers);</span>
+<span class="fc" id="L45">        this.availableSpineMarginMm = builder.availableSpineMarginMm;</span>
+<span class="fc" id="L46">        this.marginWarning = builder.marginWarning;</span>
+<span class="fc" id="L47">        this.marginDeficitMm = builder.marginDeficitMm;</span>
+<span class="fc" id="L48">    }</span>
+
+    /** Returns the 0-based sheet index within the signature (0 = outermost). */
+    public int getSheetIndex() {
+<span class="fc" id="L52">        return sheetIndex;</span>
+    }
+
+    /** Returns the outward creep shift for this sheet position in millimetres. */
+    public double getCreepMm() {
+<span class="fc" id="L57">        return creepMm;</span>
+    }
+
+    /** Returns the logical page numbers printed on both sides of this sheet. */
+    public List&lt;Integer&gt; getPageNumbers() {
+<span class="fc" id="L62">        return pageNumbers;</span>
+    }
+
+    /**
+     * Returns the available spine-side whitespace detected from the PDF content bounds,
+     * or empty if not yet analysed.
+     */
+    public Optional&lt;Double&gt; getAvailableSpineMarginMm() {
+<span class="fc" id="L70">        return availableSpineMarginMm;</span>
+    }
+
+    /** Returns true if {@link #getCreepMm()} exceeds {@link #getAvailableSpineMarginMm()}. */
+    public boolean isMarginWarning() {
+<span class="fc" id="L75">        return marginWarning;</span>
+    }
+
+    /**
+     * Returns the margin deficit in millimetres: {@code creepMm - availableSpineMarginMm}.
+     * Returns 0 if there is no warning.
+     */
+    public double getMarginDeficitMm() {
+<span class="fc" id="L83">        return marginDeficitMm;</span>
+    }
+
+    /** Returns a new {@link Builder}. */
+    public static Builder builder() {
+<span class="fc" id="L88">        return new Builder();</span>
+    }
+
+    /** Builder for {@link CreepSheetResult}. */
+    public static final class Builder {
+
+        private int sheetIndex;
+        private double creepMm;
+<span class="fc" id="L96">        private List&lt;Integer&gt; pageNumbers = List.of();</span>
+<span class="fc" id="L97">        private Optional&lt;Double&gt; availableSpineMarginMm = Optional.empty();</span>
+        private boolean marginWarning;
+        private double marginDeficitMm;
+
+<span class="fc" id="L101">        private Builder() {</span>
+<span class="fc" id="L102">        }</span>
+
+        /**
+         * Sets the 0-based sheet index.
+         *
+         * @param sheetIndex must be zero or positive
+         * @return this builder
+         */
+        public Builder sheetIndex(int sheetIndex) {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (sheetIndex &lt; 0) {</span>
+<span class="fc" id="L112">                throw new IllegalArgumentException(&quot;sheetIndex must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L114">            this.sheetIndex = sheetIndex;</span>
+<span class="fc" id="L115">            return this;</span>
+        }
+
+        /**
+         * Sets the creep shift in millimetres for this sheet.
+         *
+         * @param creepMm must be zero or positive
+         * @return this builder
+         */
+        public Builder creepMm(double creepMm) {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (creepMm &lt; 0) {</span>
+<span class="fc" id="L126">                throw new IllegalArgumentException(&quot;creepMm must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L128">            this.creepMm = creepMm;</span>
+<span class="fc" id="L129">            return this;</span>
+        }
+
+        /**
+         * Sets the logical page numbers on this sheet.
+         *
+         * @param pageNumbers must not be null
+         * @return this builder
+         */
+        public Builder pageNumbers(List&lt;Integer&gt; pageNumbers) {
+<span class="fc" id="L139">            this.pageNumbers = Objects.requireNonNull(pageNumbers, &quot;pageNumbers&quot;);</span>
+<span class="fc" id="L140">            return this;</span>
+        }
+
+        /**
+         * Sets the available spine margin detected from the PDF, or null for not analysed.
+         *
+         * @param availableSpineMarginMm in millimetres, or null if not yet measured
+         * @return this builder
+         */
+        public Builder availableSpineMarginMm(Double availableSpineMarginMm) {
+<span class="fc" id="L150">            this.availableSpineMarginMm = Optional.ofNullable(availableSpineMarginMm);</span>
+<span class="fc" id="L151">            return this;</span>
+        }
+
+        /**
+         * Sets whether a spine margin warning applies to this sheet.
+         *
+         * @param marginWarning true if creep exceeds available margin
+         * @return this builder
+         */
+        public Builder marginWarning(boolean marginWarning) {
+<span class="fc" id="L161">            this.marginWarning = marginWarning;</span>
+<span class="fc" id="L162">            return this;</span>
+        }
+
+        /**
+         * Sets the margin deficit in millimetres (0 if no warning).
+         *
+         * @param marginDeficitMm must be zero or positive
+         * @return this builder
+         */
+        public Builder marginDeficitMm(double marginDeficitMm) {
+<span class="fc bfc" id="L172" title="All 2 branches covered.">            if (marginDeficitMm &lt; 0) {</span>
+<span class="fc" id="L173">                throw new IllegalArgumentException(&quot;marginDeficitMm must be &gt;= 0&quot;);</span>
+            }
+<span class="fc" id="L175">            this.marginDeficitMm = marginDeficitMm;</span>
+<span class="fc" id="L176">            return this;</span>
+        }
+
+        /** Builds the {@link CreepSheetResult}. */
+        public CreepSheetResult build() {
+<span class="fc" id="L181">            return new CreepSheetResult(this);</span>
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L188">            return true;</span>
+        }
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (!(obj instanceof CreepSheetResult other)) {</span>
+<span class="fc" id="L191">            return false;</span>
+        }
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        return sheetIndex == other.sheetIndex</span>
+<span class="fc bfc" id="L194" title="All 4 branches covered.">                &amp;&amp; Double.compare(creepMm, other.creepMm) == 0</span>
+                &amp;&amp; marginWarning == other.marginWarning
+<span class="fc bfc" id="L196" title="All 2 branches covered.">                &amp;&amp; Double.compare(marginDeficitMm, other.marginDeficitMm) == 0</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                &amp;&amp; pageNumbers.equals(other.pageNumbers)</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">                &amp;&amp; availableSpineMarginMm.equals(other.availableSpineMarginMm);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L203">        return Objects.hash(sheetIndex, creepMm, pageNumbers,</span>
+<span class="fc" id="L204">                availableSpineMarginMm, marginWarning, marginDeficitMm);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L209">        return &quot;CreepSheetResult{&quot;</span>
+                + &quot;sheetIndex=&quot; + sheetIndex
+                + &quot;, creepMm=&quot; + creepMm
+                + &quot;, marginWarning=&quot; + marginWarning
+                + &quot;, marginDeficitMm=&quot; + marginDeficitMm
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

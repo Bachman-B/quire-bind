@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=""><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BatchRunner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">QuireBind Batch</a> &gt; <a href="index.source.html" class="el_package">com.maiitsoh.quirebind.batch.runner</a> &gt; <span class="el_source">BatchRunner.java</span></div><h1>BatchRunner.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2025 QuireBind Contributors
+ *
+ * This file is part of QuireBind.
+ *
+ * QuireBind is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QuireBind is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with QuireBind.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+ */
+package com.maiitsoh.quirebind.batch.runner;
+
+import com.maiitsoh.quirebind.batch.model.BatchConfig;
+import com.maiitsoh.quirebind.batch.model.BatchCreepConfig;
+import com.maiitsoh.quirebind.batch.model.BatchDefaults;
+import com.maiitsoh.quirebind.batch.model.BatchJob;
+import com.maiitsoh.quirebind.batch.model.BatchMarksConfig;
+import com.maiitsoh.quirebind.batch.model.BatchNumberingConfig;
+import com.maiitsoh.quirebind.batch.model.BatchPaddingConfig;
+import com.maiitsoh.quirebind.core.imposition.ImpositionEngine;
+import com.maiitsoh.quirebind.core.model.BindingTechnique;
+import com.maiitsoh.quirebind.core.model.CreepConfig;
+import com.maiitsoh.quirebind.core.model.FolioStyle;
+import com.maiitsoh.quirebind.core.model.ImpositionLayout;
+import com.maiitsoh.quirebind.core.model.MarkConfig;
+import com.maiitsoh.quirebind.core.model.NumberingConfig;
+import com.maiitsoh.quirebind.core.model.PaddingConfig;
+import com.maiitsoh.quirebind.core.model.PaperSize;
+import com.maiitsoh.quirebind.core.model.QuireProject;
+import com.maiitsoh.quirebind.core.model.ReadingDirection;
+import com.maiitsoh.quirebind.core.model.Signature;
+import com.maiitsoh.quirebind.core.pdf.PdfImpositionWriter;
+import com.maiitsoh.quirebind.core.pdf.PdfPageLoader;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Executes the jobs defined in a {@link BatchConfig}.
+ *
+ * &lt;p&gt;Each job produces an imposed PDF at its configured output path unless
+ * {@code dryRun} is {@code true}, in which case the pipeline runs but no file is written.
+ */
+public final class BatchRunner {
+
+    private BatchRunner() {
+    }
+
+    /**
+     * A single job's execution result.
+     *
+     * @param name    the job name
+     * @param success {@code true} if the job completed without error
+     * @param message a human-readable summary or error description
+     */
+<span class="fc" id="L67">    public record JobResult(String name, boolean success, String message) {</span>
+    }
+
+    /**
+     * Runs all jobs in the given configuration.
+     *
+     * @param config  the parsed batch configuration; must not be null
+     * @param baseDir directory used to resolve relative source and output paths; must not be null
+     * @param dryRun  if {@code true}, the imposition pipeline runs but no files are written
+     * @return an unmodifiable list of results, one per job, in definition order
+     */
+    public static List&lt;JobResult&gt; run(BatchConfig config, Path baseDir, boolean dryRun) {
+<span class="fc" id="L79">        Objects.requireNonNull(config, &quot;config&quot;);</span>
+<span class="fc" id="L80">        Objects.requireNonNull(baseDir, &quot;baseDir&quot;);</span>
+<span class="fc" id="L81">        List&lt;JobResult&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (BatchJob job : config.jobs()) {</span>
+<span class="fc" id="L83">            results.add(executeJob(job, config.defaults(), baseDir, dryRun));</span>
+<span class="fc" id="L84">        }</span>
+<span class="fc" id="L85">        return List.copyOf(results);</span>
+    }
+
+    /** Runs a single job; package-private for use by {@link BatchTemplateRunner}. */
+    static JobResult runSingleJob(
+            BatchJob job, BatchDefaults defaults, Path baseDir, boolean dryRun) {
+<span class="fc" id="L91">        return executeJob(job, defaults, baseDir, dryRun);</span>
+    }
+
+    private static JobResult executeJob(
+            BatchJob job, BatchDefaults defaults, Path baseDir, boolean dryRun) {
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        String name = job.name() != null ? job.name() : &quot;&lt;unnamed&gt;&quot;;</span>
+        try {
+<span class="fc" id="L98">            Path sourcePath = resolve(baseDir, job.source());</span>
+<span class="fc" id="L99">            Path outputPath = resolve(baseDir, job.output());</span>
+<span class="fc" id="L100">            QuireProject project = buildProject(job, defaults, sourcePath);</span>
+<span class="fc" id="L101">            List&lt;Signature&gt; signatures = ImpositionEngine.impose(project);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (!dryRun) {</span>
+<span class="fc" id="L103">                PdfImpositionWriter.write(signatures, sourcePath, outputPath,</span>
+<span class="fc" id="L104">                        project.getPaperSize());</span>
+            }
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            String msg = dryRun</span>
+<span class="fc" id="L107">                    ? &quot;dry-run OK — &quot; + signatures.size() + &quot; signature(s)&quot;</span>
+<span class="fc" id="L108">                    : &quot;written → &quot; + outputPath;</span>
+<span class="fc" id="L109">            return new JobResult(name, true, msg);</span>
+<span class="fc" id="L110">        } catch (Exception e) {</span>
+<span class="fc" id="L111">            return new JobResult(name, false, e.getMessage());</span>
+        }
+    }
+
+    private static Path resolve(Path baseDir, String pathStr) {
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">        if (pathStr == null || pathStr.isBlank()) {</span>
+<span class="nc" id="L117">            throw new IllegalArgumentException(&quot;path must not be blank&quot;);</span>
+        }
+<span class="fc" id="L119">        return baseDir.resolve(pathStr).normalize();</span>
+    }
+
+    private static QuireProject buildProject(
+            BatchJob job, BatchDefaults defaults, Path sourcePath) throws IOException {
+<span class="fc" id="L124">        String techniqueStr = coalesce(job.technique(), defaults.technique(), null);</span>
+<span class="pc bpc" id="L125" title="2 of 4 branches missed.">        if (techniqueStr == null || techniqueStr.isBlank()) {</span>
+<span class="nc" id="L126">            throw new IllegalArgumentException(&quot;job '&quot; + job.name() + &quot;' has no technique&quot;);</span>
+        }
+<span class="fc" id="L128">        BindingTechnique technique = BindingTechnique.valueOf(techniqueStr.toUpperCase());</span>
+
+<span class="fc" id="L130">        String dirStr = coalesce(job.readingDirection(), defaults.readingDirection(), &quot;ltr&quot;);</span>
+<span class="fc" id="L131">        ReadingDirection direction = ReadingDirection.valueOf(dirStr.toUpperCase());</span>
+
+<span class="fc" id="L133">        String sizeStr = coalesce(job.paperSize(), defaults.paperSize(), &quot;a4&quot;);</span>
+<span class="fc" id="L134">        PaperSize paperSize = PaperSize.valueOf(sizeStr.toUpperCase());</span>
+
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        BatchPaddingConfig bp = job.padding() != null ? job.padding() : BatchPaddingConfig.NONE;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        int sigSize = job.signatureSize() &gt; 0 ? job.signatureSize() : defaults.signatureSize();</span>
+<span class="fc" id="L138">        PaddingConfig padding = PaddingConfig.builder()</span>
+<span class="fc" id="L139">                .aestheticFront(bp.aestheticFront())</span>
+<span class="fc" id="L140">                .aestheticRear(bp.aestheticRear())</span>
+<span class="fc" id="L141">                .completionFront(bp.completionFront())</span>
+<span class="fc" id="L142">                .completionRear(bp.completionRear())</span>
+<span class="fc" id="L143">                .signatureSize(sigSize)</span>
+<span class="fc" id="L144">                .build();</span>
+
+<span class="fc" id="L146">        BatchNumberingConfig bn = coalesceNumbering(job.numbering(), defaults.numbering());</span>
+<span class="fc" id="L147">        NumberingConfig numbering = NumberingConfig.builder()</span>
+<span class="fc" id="L148">                .frontMatterStyle(toFolioStyle(bn.frontMatterStyle(), FolioStyle.NONE))</span>
+<span class="fc" id="L149">                .bodyStyle(toFolioStyle(bn.bodyStyle(), FolioStyle.ARABIC))</span>
+<span class="fc" id="L150">                .bodyStartNumber(bn.bodyStart())</span>
+<span class="fc" id="L151">                .suppressFirstBodyFolio(bn.suppressFirstBodyFolio())</span>
+<span class="fc" id="L152">                .build();</span>
+
+<span class="fc" id="L154">        BatchMarksConfig bm = coalesceMarks(job.marks(), defaults.marks());</span>
+<span class="fc" id="L155">        MarkConfig marks = MarkConfig.builder()</span>
+<span class="fc" id="L156">                .foldLines(bm.foldLines())</span>
+<span class="fc" id="L157">                .signatureProofMarkers(bm.signatureProofMarkers())</span>
+<span class="fc" id="L158">                .build();</span>
+
+<span class="fc" id="L160">        CreepConfig creep = buildCreepConfig(job.creep());</span>
+
+<span class="fc" id="L162">        return QuireProject.builder()</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">                .name(job.name() != null ? job.name() : &quot;batch-job&quot;)</span>
+<span class="fc" id="L164">                .bindingTechnique(technique)</span>
+<span class="fc" id="L165">                .paperSize(paperSize)</span>
+<span class="fc" id="L166">                .readingDirection(direction)</span>
+<span class="fc" id="L167">                .layout(ImpositionLayout.FOLIO)</span>
+<span class="fc" id="L168">                .pageSequence(PdfPageLoader.load(sourcePath))</span>
+<span class="fc" id="L169">                .paddingConfig(padding)</span>
+<span class="fc" id="L170">                .numberingConfig(numbering)</span>
+<span class="fc" id="L171">                .markConfig(marks)</span>
+<span class="fc" id="L172">                .creepConfig(creep)</span>
+<span class="fc" id="L173">                .build();</span>
+    }
+
+    private static CreepConfig buildCreepConfig(BatchCreepConfig bc) {
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (bc == null) {</span>
+<span class="fc" id="L178">            return CreepConfig.builder().build();</span>
+        }
+<span class="fc" id="L180">        CreepConfig.Builder b = CreepConfig.builder();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (bc.paperWeightGsm() != null) {</span>
+<span class="nc" id="L182">            b.paperWeightGsm(bc.paperWeightGsm());</span>
+        }
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (bc.paperThicknessMm() != null) {</span>
+<span class="nc" id="L185">            b.paperThicknessMm(bc.paperThicknessMm());</span>
+        }
+<span class="fc" id="L187">        return b.build();</span>
+    }
+
+    private static FolioStyle toFolioStyle(String value, FolioStyle fallback) {
+<span class="pc bpc" id="L191" title="1 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="fc" id="L192">            return fallback;</span>
+        }
+<span class="fc" id="L194">        return FolioStyle.valueOf(value.toUpperCase());</span>
+    }
+
+    private static String coalesce(String a, String b, String c) {
+<span class="pc bpc" id="L198" title="1 of 4 branches missed.">        if (a != null &amp;&amp; !a.isBlank()) {</span>
+<span class="fc" id="L199">            return a;</span>
+        }
+<span class="pc bpc" id="L201" title="2 of 4 branches missed.">        if (b != null &amp;&amp; !b.isBlank()) {</span>
+<span class="fc" id="L202">            return b;</span>
+        }
+<span class="nc" id="L204">        return c;</span>
+    }
+
+    private static BatchNumberingConfig coalesceNumbering(
+            BatchNumberingConfig job, BatchNumberingConfig def) {
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">        if (job != null &amp;&amp; job != BatchNumberingConfig.DEFAULT) {</span>
+<span class="nc" id="L210">            return job;</span>
+        }
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        return def != null ? def : BatchNumberingConfig.DEFAULT;</span>
+    }
+
+    private static BatchMarksConfig coalesceMarks(BatchMarksConfig job, BatchMarksConfig def) {
+<span class="pc bpc" id="L216" title="1 of 4 branches missed.">        if (job != null &amp;&amp; job != BatchMarksConfig.DEFAULT) {</span>
+<span class="nc" id="L217">            return job;</span>
+        }
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">        return def != null ? def : BatchMarksConfig.DEFAULT;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
