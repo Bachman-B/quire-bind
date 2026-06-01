@@ -23,9 +23,15 @@ different terms, proprietary/commercial.
 
 | Dependency | Version | Licence | Compatible | Used in | Purpose |
 |------------|---------|---------|------------|---------|---------|
-| Apache PDFBox | 3.0.x | Apache 2.0 | Yes | quire-core | PDF read, write, page manipulation, overlay |
+| Apache PDFBox | 3.0.x | Apache 2.0 | Yes | quire-core, quire-convert | PDF read, write, page manipulation, overlay |
 | SnakeYAML | 2.x | Apache 2.0 | Yes | quire-batch, quire-guides | YAML parsing for .quire files and guide front matter |
 | JavaFX | 21 | GPL 2.0 + Classpath Exception | Yes | quire-ui-desktop | Desktop UI framework |
+| Spring Boot | 3.4.x | Apache 2.0 | Yes | quire-ui-web | Web server, dependency injection, auto-configuration |
+| Spring MVC / Thymeleaf | (via Spring Boot) | Apache 2.0 | Yes | quire-ui-web | HTTP request routing and server-side HTML templating |
+| Spring Boot Actuator | (via Spring Boot) | Apache 2.0 | Yes | quire-ui-web | Health endpoint (`/actuator/health`) |
+| HTMX | 2.0.4 | BSD Zero Clause | Yes | quire-ui-web | Browser-side partial-page updates (bundled as static resource, not Maven) |
+| iText 7 pdfHTML (html2pdf) | 6.2.x | AGPL 3.0 | Yes — same licence | quire-convert | HTML and SVG to PDF conversion |
+| flexmark-java | 0.64.x | BSD 2-Clause | Yes | quire-convert | CommonMark Markdown parsing |
 
 ## Build and test dependencies (not bundled in distribution)
 
