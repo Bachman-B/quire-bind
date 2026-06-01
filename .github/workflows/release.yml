@@ -45,7 +45,7 @@ jobs:
             --vendor        QuireBind \
             --description   "PDF imposition tool for bookbinding" \
             --linux-shortcut \
-            --linux-icon    quire-bind-ui-desktop/src/main/resources/com/maiitsoh/quirebind/desktop/icons/quire-bind-256.png \
+            --icon          quire-bind-ui-desktop/src/main/resources/com/maiitsoh/quirebind/desktop/icons/quire-bind-256.png \
             --type          deb \
             --dest          dist
 
@@ -62,7 +62,7 @@ jobs:
             --vendor        QuireBind \
             --description   "PDF imposition tool for bookbinding" \
             --linux-shortcut \
-            --linux-icon    quire-bind-ui-desktop/src/main/resources/com/maiitsoh/quirebind/desktop/icons/quire-bind-256.png \
+            --icon          quire-bind-ui-desktop/src/main/resources/com/maiitsoh/quirebind/desktop/icons/quire-bind-256.png \
             --type          rpm \
             --dest          dist
 
