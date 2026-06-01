@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<licensePluginReport goal="CHECK" timestamp="1780339142731">
-    <module artifactId="quire-bind-test" groupId="com.maiitsoh.quirebind" version="1.2.0"/>
+<licensePluginReport goal="CHECK" timestamp="1780339753052">
+    <module artifactId="quire-bind-test" groupId="com.maiitsoh.quirebind" version="1.3.0"/>
     <files>
         <file path="src/main/java/com/maiitsoh/quirebind/test/util/TestPdfGenerator.java" result="PRESENT"/>
         <file path="src/test/java/com/maiitsoh/quirebind/test/system/CreepIntegrationTest.java" result="PRESENT"/>

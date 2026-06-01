@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<licensePluginReport goal="CHECK" timestamp="1780339109669">
-    <module artifactId="quire-bind-batch" groupId="com.maiitsoh.quirebind" version="1.2.0"/>
+<licensePluginReport goal="CHECK" timestamp="1780339721436">
+    <module artifactId="quire-bind-batch" groupId="com.maiitsoh.quirebind" version="1.3.0"/>
     <files>
         <file path="src/main/java/com/maiitsoh/quirebind/batch/QuireBindBatch.java" result="PRESENT"/>
         <file path="src/main/java/com/maiitsoh/quirebind/batch/model/BatchConfig.java" result="PRESENT"/>
