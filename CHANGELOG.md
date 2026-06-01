@@ -28,6 +28,12 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
+- **Drag-and-drop page reordering** — pages in the Step 3 sequence editor can now
+  be dragged to a new position in both the web wizard and the desktop app, in addition
+  to the existing ↑/↓ buttons.
+- **HTML and Markdown source files** — the upload step now accepts `.html`, `.htm`,
+  `.md`, and `.markdown` files in addition to PDF. They are converted to PDF before
+  entering the binding pipeline. Available in both the web wizard and the desktop app.
 - **Creep compensation** — when a paper thickness is entered in the binding step,
   an "Apply creep compensation" option becomes available on the export step.
   When enabled, each sheet's content is shifted inward toward the fold line by the

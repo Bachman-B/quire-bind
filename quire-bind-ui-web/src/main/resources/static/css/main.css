@@ -520,6 +520,10 @@ a:hover { text-decoration: underline; }
 }
 .btn-secondary:hover { background: var(--bg); border-color: var(--blue); }
 
+/* ── Page list drag-and-drop ─────────────────────────────────────────── */
+.page-dragging  { opacity: 0.4; }
+.page-drag-over td { background: #e8f0fe !important; }
+
 /* ── Creep compensation ──────────────────────────────────────────────── */
 .creep-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0 6px; }
 .creep-hint    { margin: 2px 0 0 20px; font-size: 0.82em; color: var(--text-muted); }

@@ -57,6 +57,10 @@
         <!-- Spring Boot -->
         <spring-boot.version>3.4.5</spring-boot.version>
 
+        <!-- Format conversion -->
+        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+        <flexmark.version>0.64.8</flexmark.version>
+
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
@@ -85,6 +89,22 @@
                 <groupId>com.maiitsoh.quirebind</groupId>
                 <artifactId>quire-bind-batch</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.maiitsoh.quirebind</groupId>
+                <artifactId>quire-bind-convert</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- Format conversion libraries -->
+            <dependency>
+                <groupId>com.openhtmltopdf</groupId>
+                <artifactId>openhtmltopdf-pdfbox</artifactId>
+                <version>${openhtmltopdf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.vladsch.flexmark</groupId>
+                <artifactId>flexmark</artifactId>
+                <version>${flexmark.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.maiitsoh.quirebind</groupId>

@@ -29,6 +29,7 @@ import com.maiitsoh.quirebind.core.model.PaperSize;
 import com.maiitsoh.quirebind.core.model.QuirePage;
 import com.maiitsoh.quirebind.core.model.ReadingDirection;
 import com.maiitsoh.quirebind.core.model.SewingConfig;
+import com.maiitsoh.quirebind.convert.DocumentConverter;
 import com.maiitsoh.quirebind.core.pdf.PdfPageLoader;
 import org.apache.pdfbox.Loader;
 import com.maiitsoh.quirebind.guides.loader.GuideLoader;
@@ -90,18 +91,48 @@ public class WizardController {
             @RequestHeader(value = "HX-Request", required = false) String htmx,
             Model model) throws IOException {
         if (file.isEmpty()) {
-            model.addAttribute("error", "Please select a PDF file.");
+            model.addAttribute("error", "Please select a file.");
             addUploadModel(model);
             return htmx != null ? STEP_UPLOAD : "index";
         }
-        Path tmp = Files.createTempFile("quire-upload-", ".pdf");
-        file.transferTo(tmp);
         String name = file.getOriginalFilename();
+        if (name == null || name.isBlank()) {
+            name = "document.pdf";
+        }
+        if (!DocumentConverter.isSupported(name)) {
+            model.addAttribute("error",
+                "Unsupported file type. Accepted: .pdf, .html, .htm, .md, .markdown");
+            addUploadModel(model);
+            return htmx != null ? STEP_UPLOAD : "index";
+        }
+        // Write upload to a temp file, preserving original extension for conversion detection
+        String ext = name.contains(".") ? name.substring(name.lastIndexOf('.')) : ".pdf";
+        Path tmp = Files.createTempFile("quire-upload-", ext);
+        file.transferTo(tmp);
+        // Convert to PDF if needed (HTML or Markdown); PDF files are used directly
+        Path pdfPath;
+        boolean converted = !name.toLowerCase().endsWith(".pdf");
+        if (converted) {
+            try {
+                pdfPath = DocumentConverter.toPdf(tmp, session.getPaperSize());
+            } catch (Exception e) {
+                Files.deleteIfExists(tmp);
+                model.addAttribute("error", "Conversion failed: " + e.getMessage());
+                addUploadModel(model);
+                return htmx != null ? STEP_UPLOAD : "index";
+            } finally {
+                if (converted) {
+                    Files.deleteIfExists(tmp);
+                }
+            }
+        } else {
+            pdfPath = tmp;
+        }
         int count;
-        try (var doc = Loader.loadPDF(tmp.toFile())) {
+        try (var doc = Loader.loadPDF(pdfPath.toFile())) {
             count = doc.getNumberOfPages();
         }
-        session.addSource(tmp, name != null ? name : "document.pdf", count);
+        session.addSource(pdfPath, name, count);
         session.setPageSequence(rebuildSequence());
         session.setImpositionResult(null);
         addUploadModel(model);
@@ -342,6 +373,23 @@ public class WizardController {
         PageSequence seq = session.getPageSequence();
         if (seq != null && position > 0 && position < seq.pageCount()) {
             seq.movePage(position, position - 1);
+            seq.reindex();
+        }
+        addPageListModel(model);
+        return "fragments/page-list :: rows";
+    }
+
+    /** Moves the page at {@code from} to {@code to} via drag-and-drop. */
+    @PostMapping("/wizard/pages/reorder")
+    public String reorderPage(
+            @RequestParam("from") int from,
+            @RequestParam("to") int to,
+            Model model) {
+        PageSequence seq = session.getPageSequence();
+        if (seq != null && from >= 0 && to >= 0
+                && from < seq.pageCount() && to < seq.pageCount()
+                && from != to) {
+            seq.movePage(from, to);
             seq.reindex();
         }
         addPageListModel(model);

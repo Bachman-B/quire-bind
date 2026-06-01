@@ -14,6 +14,7 @@
         <table class="page-list-table">
             <thead>
                 <tr>
+                    <th class="col-drag"></th>
                     <th class="col-num">#</th>
                     <th class="col-type">Type</th>
                     <th class="col-actions">Actions</th>
@@ -25,6 +26,52 @@
         </table>
     </div>
 </div>
+<script>
+(function () {
+    var dragFrom = null;
+    var tbody = document.getElementById('page-list-tbody');
+    if (!tbody) return;
+    function rows() { return tbody.querySelectorAll('tr[data-position]'); }
+    tbody.addEventListener('dragstart', function (e) {
+        var row = e.target.closest('tr[data-position]');
+        if (!row) return;
+        dragFrom = parseInt(row.dataset.position);
+        row.classList.add('page-dragging');
+    });
+    tbody.addEventListener('dragover', function (e) {
+        var row = e.target.closest('tr[data-position]');
+        if (!row) return;
+        e.preventDefault();
+        rows().forEach(function (r) { r.classList.remove('page-drag-over'); });
+        if (parseInt(row.dataset.position) !== dragFrom) row.classList.add('page-drag-over');
+    });
+    tbody.addEventListener('dragleave', function (e) {
+        var row = e.target.closest('tr[data-position]');
+        if (row) row.classList.remove('page-drag-over');
+    });
+    tbody.addEventListener('drop', function (e) {
+        var row = e.target.closest('tr[data-position]');
+        rows().forEach(function (r) { r.classList.remove('page-dragging', 'page-drag-over'); });
+        if (!row || dragFrom === null) { dragFrom = null; return; }
+        e.preventDefault();
+        var dragTo = parseInt(row.dataset.position);
+        if (dragFrom === dragTo) { dragFrom = null; return; }
+        fetch('/wizard/pages/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true' },
+            body: new URLSearchParams({ from: dragFrom, to: dragTo })
+        }).then(function (r) { return r.text(); }).then(function (html) {
+            tbody.innerHTML = html;
+            htmx.process(tbody);
+        });
+        dragFrom = null;
+    });
+    tbody.addEventListener('dragend', function () {
+        rows().forEach(function (r) { r.classList.remove('page-dragging', 'page-drag-over'); });
+        dragFrom = null;
+    });
+})();
+</script>
 </th:block>
 
 <th:block th:fragment="row-content">
@@ -32,15 +79,17 @@
         <td colspan="3" class="page-list-empty">No pages loaded.</td>
     </tr>
     <tr th:each="row : ${pageItems}"
-        th:classappend="${row.header()} ? 'page-list-group-row' : ''">
+        th:classappend="${row.header()} ? 'page-list-group-row' : ''"
+        th:attr="draggable=${not row.header()}, data-position=${not row.header() ? row.position() : null}">
 
         <th:block th:if="${row.header()}">
-            <td colspan="3"
+            <td colspan="4"
                 th:class="'page-list-group ' + ${row.cssClass()}"
                 th:text="${row.label()}"></td>
         </th:block>
 
         <th:block th:unless="${row.header()}">
+            <td class="col-drag drag-handle" title="Drag to reorder">⠿</td>
             <td class="col-num" th:text="${row.position() + 1}">1</td>
             <td class="col-type">
                 <span th:class="'page-type page-type--' + ${row.cssClass()}"

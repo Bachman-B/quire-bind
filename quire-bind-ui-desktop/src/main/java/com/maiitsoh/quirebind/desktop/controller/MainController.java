@@ -20,6 +20,7 @@ package com.maiitsoh.quirebind.desktop.controller;
 
 import com.maiitsoh.quirebind.batch.parser.QuireFileParser;
 import com.maiitsoh.quirebind.batch.runner.BatchTemplateRunner;
+import com.maiitsoh.quirebind.convert.DocumentConverter;
 import com.maiitsoh.quirebind.core.binding.BindingGroupMapper;
 import com.maiitsoh.quirebind.core.creep.CreepCalculator;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
@@ -562,13 +563,25 @@ public final class MainController implements Initializable {
         if (state.getInputPdfs().contains(path)) {
             return;
         }
-        state.addInputPdf(path);
-        try (var doc = org.apache.pdfbox.Loader.loadPDF(path.toFile())) {
+        // Convert HTML/Markdown to PDF before adding to the source list
+        Path pdfPath;
+        String displayName = path.getFileName().toString();
+        try {
+            pdfPath = DocumentConverter.toPdf(path, state.getPaperSize());
+        } catch (UnsupportedOperationException e) {
+            showError("Unsupported format", e.getMessage());
+            return;
+        } catch (IOException e) {
+            showError("Conversion failed", e.getMessage());
+            return;
+        }
+        state.addInputPdf(pdfPath);
+        try (var doc = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
             int pages = doc.getNumberOfPages();
-            sourcePdfListView.getItems().add(path.getFileName() + " (" + pages + " pages)");
+            sourcePdfListView.getItems().add(displayName + " (" + pages + " pages)");
         } catch (IOException e) {
             state.removeInputPdf(state.getInputPdfs().size() - 1);
-            showError("Failed to open PDF", e.getMessage());
+            showError("Failed to open file", e.getMessage());
             return;
         }
         rebuildSequenceFromSources();
@@ -1893,7 +1906,11 @@ public final class MainController implements Initializable {
     private FileChooser pdfChooser(String title) {
         FileChooser fc = new FileChooser();
         fc.setTitle(title);
+        fc.getExtensionFilters().add(new ExtensionFilter(
+            "Supported files", "*.pdf", "*.html", "*.htm", "*.md", "*.markdown"));
         fc.getExtensionFilters().add(new ExtensionFilter("PDF Files", "*.pdf"));
+        fc.getExtensionFilters().add(new ExtensionFilter("HTML Files", "*.html", "*.htm"));
+        fc.getExtensionFilters().add(new ExtensionFilter("Markdown Files", "*.md", "*.markdown"));
         return fc;
     }
 
@@ -1956,6 +1973,10 @@ public final class MainController implements Initializable {
             getStyleClass().removeAll("sig-header-cell", "blank-page-cell",
                 "content-page-cell", "overflow-sig-cell", "zone-header-cell");
             setOnMouseClicked(null);
+            setOnDragDetected(null);
+            setOnDragOver(null);
+            setOnDragDropped(null);
+            setOnDragDone(null);
             if (empty || item == null) {
                 setText(null);
             } else if (item.isZoneHeader()) {
@@ -1971,6 +1992,38 @@ public final class MainController implements Initializable {
                 setText(item.label());
                 boolean isBlank = item.pageType() != PageType.CONTENT;
                 getStyleClass().add(isBlank ? "blank-page-cell" : "content-page-cell");
+                // Drag-and-drop reordering for page rows
+                setOnDragDetected(e -> {
+                    Dragboard db = startDragAndDrop(TransferMode.MOVE);
+                    ClipboardContent cc = new ClipboardContent();
+                    cc.putString(String.valueOf(item.seqIndex()));
+                    db.setContent(cc);
+                    e.consume();
+                });
+                setOnDragOver(e -> {
+                    if (e.getGestureSource() != this && e.getDragboard().hasString()) {
+                        e.acceptTransferModes(TransferMode.MOVE);
+                    }
+                    e.consume();
+                });
+                setOnDragDropped(e -> {
+                    Dragboard db = e.getDragboard();
+                    if (db.hasString()) {
+                        int from = Integer.parseInt(db.getString());
+                        int to = item.seqIndex();
+                        PageSequence seq = state.getPageSequence();
+                        if (seq != null && from != to
+                                && from >= 0 && to >= 0
+                                && from < seq.pageCount() && to < seq.pageCount()) {
+                            seq.movePage(from, to);
+                            seq.reindex();
+                            rebuildPageList();
+                        }
+                        e.setDropCompleted(true);
+                    }
+                    e.consume();
+                });
+                setOnDragDone(javafx.event.Event::consume);
             }
         }
     }

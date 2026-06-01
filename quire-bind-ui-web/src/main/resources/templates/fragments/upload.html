@@ -21,7 +21,7 @@
 
     <div class="step-card">
         <h2 class="step-title">Load Source</h2>
-        <p class="step-description">Add one or more PDFs. They will be combined in the order listed.</p>
+        <p class="step-description">Add source files in order. PDF, HTML, and Markdown (.md) are supported.</p>
 
         <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
 
@@ -88,7 +88,8 @@
                 <label for="pdf-input" class="field-label"
                        th:text="${#lists.isEmpty(sources)} ? 'PDF file' : 'Add another PDF'">PDF file</label>
                 <div class="file-input-row">
-                    <input id="pdf-input" type="file" name="pdf" accept=".pdf"
+                    <input id="pdf-input" type="file" name="pdf"
+                           accept=".pdf,.html,.htm,.md,.markdown"
                            th:required="${#lists.isEmpty(sources)}"
                            class="file-input"/>
                     <button type="submit" class="btn btn-secondary"

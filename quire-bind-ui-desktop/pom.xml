@@ -34,6 +34,10 @@
             <artifactId>quire-bind-batch</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.maiitsoh.quirebind</groupId>
+            <artifactId>quire-bind-convert</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
         </dependency>

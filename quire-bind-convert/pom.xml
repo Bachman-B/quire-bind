@@ -13,11 +13,28 @@
 
     <artifactId>quire-bind-convert</artifactId>
     <name>QuireBind Convert</name>
-    <description>Format conversion pipeline — Phase 2 placeholder. No code in Phase 1.</description>
+    <description>HTML and Markdown to PDF conversion pipeline</description>
 
-    <!--
-        Phase 2 placeholder. This module exists to establish the module graph.
-        No source code is written here in Phase 1.
-        Phase 2 will add: HTML, DOCX, ODT conversion via Playwright and LibreOffice.
-    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.maiitsoh.quirebind</groupId>
+            <artifactId>quire-bind-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
+    </dependencies>
 </project>

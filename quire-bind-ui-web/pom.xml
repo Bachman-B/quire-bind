@@ -24,6 +24,10 @@
             <groupId>com.maiitsoh.quirebind</groupId>
             <artifactId>quire-bind-guides</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.maiitsoh.quirebind</groupId>
+            <artifactId>quire-bind-convert</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
