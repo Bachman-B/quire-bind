@@ -108,6 +108,25 @@ public class WizardController {
         return htmx != null ? STEP_UPLOAD : "index";
     }
 
+    /** Moves a source PDF from one position to another (drag-and-drop) and re-renders the upload step. */
+    @PostMapping("/wizard/upload/reorder")
+    public String reorderSource(
+            @RequestParam("from") int from,
+            @RequestParam("to") int to,
+            @RequestHeader(value = "HX-Request", required = false) String htmx,
+            Model model) throws IOException {
+        int size = session.getSources().size();
+        if (from >= 0 && to >= 0 && from < size && to < size && from != to) {
+            WebSession.SourceEntry entry = session.getSources().get(from);
+            session.removeSource(from);
+            session.insertSource(to, entry);
+            session.setPageSequence(rebuildSequence());
+            session.setImpositionResult(null);
+        }
+        addUploadModel(model);
+        return htmx != null ? STEP_UPLOAD : "index";
+    }
+
     /** Moves a source PDF one position up and re-renders the upload step. */
     @PostMapping("/wizard/upload/move-up")
     public String moveSourceUp(

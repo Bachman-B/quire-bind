@@ -112,6 +112,11 @@ public class WebSession {
         sources.add(new SourceEntry(tempPath, filename, pageCount));
     }
 
+    /** Inserts a source entry at the given index. */
+    public void insertSource(int index, SourceEntry entry) {
+        sources.add(index, entry);
+    }
+
     /**
      * Removes the source at the given index, deleting its temp file.
      * No-op if the index is out of range.

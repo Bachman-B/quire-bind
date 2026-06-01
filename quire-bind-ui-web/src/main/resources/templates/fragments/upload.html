@@ -30,14 +30,19 @@
             <table class="source-table">
                 <thead>
                     <tr>
+                        <th class="col-drag"></th>
                         <th class="col-num">#</th>
                         <th class="col-name">File</th>
                         <th class="col-pages">Pages</th>
                         <th class="col-action"></th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr th:each="src, iter : ${sources}">
+                <tbody id="source-tbody">
+                    <tr th:each="src, iter : ${sources}"
+                        draggable="true"
+                        th:attr="data-index=${iter.index}"
+                        class="source-row">
+                        <td class="col-drag drag-handle" title="Drag to reorder">⠿</td>
                         <td class="col-num" th:text="${iter.index + 1}">1</td>
                         <td class="col-name" th:text="${src.filename}">document.pdf</td>
                         <td class="col-pages" th:text="${src.pageCount}">0</td>
@@ -107,6 +112,53 @@
             </form>
         </div>
     </div>
+
+    <script th:if="${not #lists.isEmpty(sources)}">
+    (function () {
+        let dragFrom = null;
+        const tbody = document.getElementById('source-tbody');
+        if (!tbody) return;
+
+        tbody.addEventListener('dragstart', function (e) {
+            const row = e.target.closest('.source-row');
+            if (!row) return;
+            dragFrom = parseInt(row.dataset.index);
+            row.classList.add('dragging');
+        });
+        tbody.addEventListener('dragover', function (e) {
+            const row = e.target.closest('.source-row');
+            if (!row) return;
+            e.preventDefault();
+            tbody.querySelectorAll('.source-row').forEach(r => r.classList.remove('drag-over'));
+            if (parseInt(row.dataset.index) !== dragFrom) row.classList.add('drag-over');
+        });
+        tbody.addEventListener('dragleave', function (e) {
+            const row = e.target.closest('.source-row');
+            if (row) row.classList.remove('drag-over');
+        });
+        tbody.addEventListener('drop', function (e) {
+            const row = e.target.closest('.source-row');
+            tbody.querySelectorAll('.source-row').forEach(r => r.classList.remove('dragging', 'drag-over'));
+            if (!row || dragFrom === null) { dragFrom = null; return; }
+            e.preventDefault();
+            const dragTo = parseInt(row.dataset.index);
+            if (dragFrom === dragTo) { dragFrom = null; return; }
+            fetch('/wizard/upload/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true' },
+                body: new URLSearchParams({ from: dragFrom, to: dragTo })
+            }).then(r => r.text()).then(html => {
+                document.getElementById('wizard-content').innerHTML = html;
+                htmx.process(document.getElementById('wizard-content'));
+            });
+            dragFrom = null;
+        });
+        tbody.addEventListener('dragend', function () {
+            tbody.querySelectorAll('.source-row').forEach(r => r.classList.remove('dragging', 'drag-over'));
+            dragFrom = null;
+        });
+    })();
+    </script>
 </th:block>
 
 </body>

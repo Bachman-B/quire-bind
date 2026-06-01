@@ -76,6 +76,9 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -340,6 +343,52 @@ public final class MainController implements Initializable {
         colSheetCount.setCellValueFactory(
             r -> new SimpleIntegerProperty(r.getValue().sheetCount()));
         colCreep.setCellValueFactory(r -> new SimpleStringProperty(r.getValue().creepSummary()));
+
+        // Drag-and-drop reordering for the source PDF list
+        sourcePdfListView.setCellFactory(lv -> {
+            ListCell<String> cell = new ListCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty ? null : item);
+                }
+            };
+            cell.setOnDragDetected(e -> {
+                if (cell.isEmpty()) {
+                    return;
+                }
+                Dragboard db = cell.startDragAndDrop(TransferMode.MOVE);
+                ClipboardContent cc = new ClipboardContent();
+                cc.putString(String.valueOf(cell.getIndex()));
+                db.setContent(cc);
+                e.consume();
+            });
+            cell.setOnDragOver(e -> {
+                if (e.getGestureSource() != cell && e.getDragboard().hasString()) {
+                    e.acceptTransferModes(TransferMode.MOVE);
+                }
+                e.consume();
+            });
+            cell.setOnDragDropped(e -> {
+                Dragboard db = e.getDragboard();
+                if (db.hasString()) {
+                    int from = Integer.parseInt(db.getString());
+                    int to = cell.getIndex();
+                    int size = sourcePdfListView.getItems().size();
+                    if (from != to && from >= 0 && to >= 0 && from < size && to < size) {
+                        String label = sourcePdfListView.getItems().remove(from);
+                        sourcePdfListView.getItems().add(to, label);
+                        Path path = state.getInputPdfs().remove(from);
+                        state.getInputPdfs().add(to, path);
+                        sourcePdfListView.getSelectionModel().select(to);
+                        rebuildSequenceFromSources();
+                    }
+                    e.setDropCompleted(true);
+                }
+                e.consume();
+            });
+            return cell;
+        });
 
         refreshDiagram();
         onTechniqueChanged();
