@@ -28,17 +28,47 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
-- **Drag-and-drop page reordering** — pages in the Step 3 sequence editor can now
-  be dragged to a new position in both the web wizard and the desktop app, in addition
-  to the existing ↑/↓ buttons.
+- (nothing yet)
+
+---
+
+## [1.3.0] — 2026-06-01
+
+### Added
 - **HTML and Markdown source files** — the upload step now accepts `.html`, `.htm`,
-  `.md`, and `.markdown` files in addition to PDF. They are converted to PDF before
-  entering the binding pipeline. Available in both the web wizard and the desktop app.
-- **Creep compensation** — when a paper thickness is entered in the binding step,
-  an "Apply creep compensation" option becomes available on the export step.
-  When enabled, each sheet's content is shifted inward toward the fold line by the
-  calculated creep amount, so after trimming all pages have consistent margins.
-  Available in both the web wizard and the desktop app.
+  `.md`, and `.markdown` files alongside PDF. Documents are converted before entering
+  the binding pipeline, including inline SVG diagrams. Available in both the web
+  wizard and the desktop app.
+- **Drag-and-drop page reordering** — pages in the Step 3 sequence editor can now be
+  dragged to a new position, in addition to the existing ↑/↓ buttons. The source file
+  list on Step 1 also supports drag-and-drop reordering.
+- **Creep compensation** — enter a paper thickness in the binding step and the
+  calculated creep is shown in the imposition summary. On export, content on each
+  sheet is shifted inward toward the fold so that after trimming all pages have
+  consistent margins. Available in both the web wizard and the desktop app.
+
+### Fixed
+- **Perfect Binding now outputs pages in reading order, full size** — previously
+  produced 2-up landscape sheets designed for folded bindings, which is wrong for
+  flat stacking. Each page is now a portrait PDF page in sequence.
+- **Imposition summary for Perfect Binding** — previously showed one row per internal
+  4-page block (e.g. 14 rows for a 56-page document). Now shows one row with the
+  total page count; sheet count is not shown since printing method is up to the user.
+- **Markdown documents with SVG diagrams** — a document with inline SVG diagrams
+  previously collapsed to a single oversized page. Now produces correct multi-page
+  output.
+- **Paper thickness field** — now accepts both `.` and `,` as decimal separator,
+  shows the `mm` unit label, and automatically enables creep compensation when a
+  value is entered.
+- **Imposition summary page count** — was showing sheet capacity (×4) regardless of
+  actual content pages. Now shows the number of source pages in each signature.
+
+### Changed
+- **Export step** — "Browse…" and separate "Export PDF" merged into a single
+  "Export PDF…" button that opens the file dialog and saves immediately (same flow
+  as Save Template).
+- **New Project button** — moved to the bottom of the export step, separated by a
+  divider, so it cannot be accidentally triggered while navigating the wizard.
 
 ---
 
