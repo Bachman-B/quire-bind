@@ -84,6 +84,62 @@ class WizardStateTest {
     }
 
     @Test
+    void moveInputPdfUpSwapsWithPrevious() {
+        WizardState state = new WizardState();
+        Path a = Path.of("/tmp/a.pdf");
+        Path b = Path.of("/tmp/b.pdf");
+        Path c = Path.of("/tmp/c.pdf");
+        state.addInputPdf(a);
+        state.addInputPdf(b);
+        state.addInputPdf(c);
+
+        state.moveInputPdfUp(1); // b moves before a
+        assertEquals(b, state.getInputPdfs().get(0));
+        assertEquals(a, state.getInputPdfs().get(1));
+        assertEquals(c, state.getInputPdfs().get(2));
+    }
+
+    @Test
+    void moveInputPdfUpAtFirstIndexIsNoOp() {
+        WizardState state = new WizardState();
+        Path a = Path.of("/tmp/a.pdf");
+        Path b = Path.of("/tmp/b.pdf");
+        state.addInputPdf(a);
+        state.addInputPdf(b);
+        state.moveInputPdfUp(0);
+        assertEquals(a, state.getInputPdfs().get(0));
+        assertEquals(b, state.getInputPdfs().get(1));
+    }
+
+    @Test
+    void moveInputPdfDownSwapsWithNext() {
+        WizardState state = new WizardState();
+        Path a = Path.of("/tmp/a.pdf");
+        Path b = Path.of("/tmp/b.pdf");
+        Path c = Path.of("/tmp/c.pdf");
+        state.addInputPdf(a);
+        state.addInputPdf(b);
+        state.addInputPdf(c);
+
+        state.moveInputPdfDown(1); // b moves after c
+        assertEquals(a, state.getInputPdfs().get(0));
+        assertEquals(c, state.getInputPdfs().get(1));
+        assertEquals(b, state.getInputPdfs().get(2));
+    }
+
+    @Test
+    void moveInputPdfDownAtLastIndexIsNoOp() {
+        WizardState state = new WizardState();
+        Path a = Path.of("/tmp/a.pdf");
+        Path b = Path.of("/tmp/b.pdf");
+        state.addInputPdf(a);
+        state.addInputPdf(b);
+        state.moveInputPdfDown(1);
+        assertEquals(a, state.getInputPdfs().get(0));
+        assertEquals(b, state.getInputPdfs().get(1));
+    }
+
+    @Test
     void settersRoundTrip() {
         WizardState state = new WizardState();
         Path path = Path.of("/tmp/test.pdf");
