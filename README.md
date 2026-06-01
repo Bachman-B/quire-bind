@@ -53,7 +53,7 @@ This builds all modules, runs all tests, and generates coverage and test reports
 ## Project reports
 
 Test results, coverage reports, and the full dependency list are published at:
-https://bachman-b.github.io/quire/
+https://bachman-b.github.io/quire-bind/
 
 ---
 

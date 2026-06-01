@@ -4,7 +4,7 @@ This document lists all third-party libraries used by Quire, their versions, and
 It is kept current alongside the Maven POM. Every dependency addition must be recorded here
 and reviewed for AGPL-3.0 compatibility before the PR is merged.
 
-This document is published at https://bachman-b.github.io/quire/dependencies/
+This document is published at https://bachman-b.github.io/quire-bind/dependencies/
 
 ---
 
