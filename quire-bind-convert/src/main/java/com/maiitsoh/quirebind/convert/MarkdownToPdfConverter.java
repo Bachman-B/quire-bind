@@ -18,38 +18,30 @@
  */
 package com.maiitsoh.quirebind.convert;
 
-import com.vladsch.flexmark.ast.BulletList;
-import com.vladsch.flexmark.ast.BulletListItem;
-import com.vladsch.flexmark.ast.Heading;
-import com.vladsch.flexmark.ast.OrderedList;
-import com.vladsch.flexmark.ast.OrderedListItem;
-import com.vladsch.flexmark.ast.Paragraph;
-import com.vladsch.flexmark.ast.SoftLineBreak;
+import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
-import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
-import com.maiitsoh.quirebind.convert.PdfPageRenderer.Block;
-import com.maiitsoh.quirebind.convert.PdfPageRenderer.Block.BlockType;
 import com.maiitsoh.quirebind.core.model.PaperSize;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
- * Converts a Markdown file (.md / .markdown) to a paginated PDF using PDFBox.
+ * Converts a Markdown file (.md / .markdown) to PDF via HTML.
  *
- * <p>Parses CommonMark via flexmark-java and renders headings, paragraphs, and
- * lists using {@link PdfPageRenderer}.
+ * <p>Parses CommonMark using flexmark-java, wraps the result in a clean HTML page
+ * with a minimal stylesheet, then renders to PDF via {@link HtmlToPdfConverter}
+ * (iText 7 pdfHTML).
  */
 public final class MarkdownToPdfConverter {
 
     private static final Parser PARSER =
         Parser.builder(new MutableDataSet()).build();
+    private static final HtmlRenderer RENDERER =
+        HtmlRenderer.builder(new MutableDataSet()).build();
 
     private MarkdownToPdfConverter() {
     }
@@ -81,56 +73,28 @@ public final class MarkdownToPdfConverter {
         Objects.requireNonNull(markdown, "markdown");
         Objects.requireNonNull(paperSize, "paperSize");
         Document doc = PARSER.parse(markdown);
-        List<Block> blocks = extractBlocks(doc);
-        return PdfPageRenderer.render(blocks, paperSize);
+        String body = RENDERER.render(doc);
+        float[] dims = HtmlToPdfConverter.pageDimsMm(paperSize);
+        String html = wrapHtml(body, dims);
+        return HtmlToPdfConverter.convertHtml(html, null, paperSize);
     }
 
-    private static List<Block> extractBlocks(Node root) {
-        List<Block> blocks = new ArrayList<>();
-        for (Node child : root.getChildren()) {
-            if (child instanceof Heading h) {
-                String text = h.getText().toString().trim();
-                if (!text.isEmpty()) {
-                    blocks.add(new Block(BlockType.HEADING, text, h.getLevel()));
-                    blocks.add(new Block(BlockType.BLANK, "", 0));
-                }
-            } else if (child instanceof Paragraph p) {
-                String text = flatText(p);
-                if (!text.isEmpty()) {
-                    blocks.add(new Block(BlockType.PARAGRAPH, text, 0));
-                    blocks.add(new Block(BlockType.BLANK, "", 0));
-                }
-            } else if (child instanceof BulletList || child instanceof OrderedList) {
-                for (Node item : child.getChildren()) {
-                    if (item instanceof BulletListItem || item instanceof OrderedListItem) {
-                        // First paragraph inside the list item
-                        Node first = item.getFirstChild();
-                        String text = first != null ? flatText(first) : "";
-                        if (!text.isEmpty()) {
-                            blocks.add(new Block(BlockType.LIST_ITEM, text, 0));
-                        }
-                    }
-                }
-                blocks.add(new Block(BlockType.BLANK, "", 0));
-            } else {
-                // Recurse into block containers
-                blocks.addAll(extractBlocks(child));
-            }
-        }
-        return blocks;
-    }
-
-    private static String flatText(Node node) {
-        StringBuilder sb = new StringBuilder();
-        for (Node child : node.getChildren()) {
-            if (child instanceof SoftLineBreak) {
-                sb.append(' ');
-            } else if (child.getFirstChild() == null) {
-                sb.append(child.getChars().toString());
-            } else {
-                sb.append(flatText(child));
-            }
-        }
-        return sb.toString().trim();
+    private static String wrapHtml(String body, float[] dims) {
+        return "<!DOCTYPE html>\n<html>\n<head>\n"
+            + "<meta charset=\"UTF-8\"/>\n"
+            + "<style>\n"
+            + "  @page { size: " + dims[0] + "mm " + dims[1] + "mm; margin: 20mm; }\n"
+            + "  body  { font-family: Georgia, serif; font-size: 11pt; "
+            + "          line-height: 1.5; color: #000; }\n"
+            + "  h1 { font-size: 20pt; } h2 { font-size: 15pt; } "
+            + "  h3 { font-size: 12pt; }\n"
+            + "  p  { margin: 0 0 8pt; }\n"
+            + "  pre, code { font-family: monospace; font-size: 9pt; }\n"
+            + "  pre { background: #f5f5f5; padding: 6pt; }\n"
+            + "  ul, ol { margin: 0 0 8pt 20pt; }\n"
+            + "  blockquote { margin: 8pt 0 8pt 20pt; border-left: 3pt solid #ccc;"
+            + "               padding-left: 8pt; color: #555; }\n"
+            + "</style>\n</head>\n<body>\n"
+            + body + "\n</body>\n</html>";
     }
 }

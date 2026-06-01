@@ -576,6 +576,13 @@ public final class MainController implements Initializable {
             return;
         }
         state.addInputPdf(pdfPath);
+        state.putSourceDisplayName(pdfPath.toString(), displayName);
+        // Warn when importing HTML — CSS/images are not preserved
+        String lowerName = displayName.toLowerCase();
+        if (lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
+            setStatus("Note: HTML imported as plain text — CSS and images are not rendered. "
+                + "For designed pages, export as PDF from your browser first.");
+        }
         try (var doc = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
             int pages = doc.getNumberOfPages();
             sourcePdfListView.getItems().add(displayName + " (" + pages + " pages)");
@@ -1443,7 +1450,7 @@ public final class MainController implements Initializable {
         String type = switch (page.getPageType()) {
             case CONTENT -> page.getSourceDocumentId()
                 .map(id -> {
-                    String fname = java.nio.file.Path.of(id).getFileName().toString();
+                    String fname = state.getSourceDisplayName(id);
                     return fname + page.getSourcePageIndex()
                         .map(i -> " p." + (i + 1)).orElse("");
                 })

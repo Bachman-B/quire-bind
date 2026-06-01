@@ -60,6 +60,8 @@ public final class WizardState {
 
     // Single PDF mode — supports multiple source PDFs combined in order
     private List<Path> inputPdfs = new ArrayList<>();
+    // Maps converted PDF path string → original display name (for HTML/MD files)
+    private final java.util.Map<String, String> sourceDisplayNames = new java.util.LinkedHashMap<>();
     private PageSequence pageSequence;
 
     // Batch mode
@@ -170,6 +172,20 @@ public final class WizardState {
      */
     public Path getInputPdf() {
         return inputPdfs.isEmpty() ? null : inputPdfs.get(0);
+    }
+
+    /**
+     * Returns the display name for a source document ID — the original filename
+     * before conversion (e.g. {@code cover.html} instead of the temp PDF path).
+     */
+    public String getSourceDisplayName(String docId) {
+        return sourceDisplayNames.getOrDefault(docId,
+            docId != null ? java.nio.file.Path.of(docId).getFileName().toString() : "");
+    }
+
+    /** Registers a display name for a converted source. */
+    public void putSourceDisplayName(String docId, String displayName) {
+        sourceDisplayNames.put(docId, displayName);
     }
 
     /**
@@ -539,6 +555,7 @@ public final class WizardState {
         mode = WizardMode.SINGLE_PDF;
         paddingPosition = PaddingPosition.AFTER;
         inputPdfs = new ArrayList<>();
+        sourceDisplayNames.clear();
         pageSequence = null;
         batchConfigPath = null;
         batchConfig = null;
