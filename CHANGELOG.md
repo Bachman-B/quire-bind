@@ -28,6 +28,13 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
+- (nothing yet)
+
+---
+
+## [1.2.0] — 2026-06-01
+
+### Added
 - **App icon** — QuireBind now has a proper icon (stylised blue Q) across all
   platforms: desktop window title bar, taskbar, deb/rpm/AppImage on Linux,
   MSI installer and Start Menu on Windows, DMG on macOS.
