@@ -18,26 +18,35 @@
  */
 package com.maiitsoh.quirebind.convert;
 
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.maiitsoh.quirebind.convert.PdfPageRenderer.Block;
+import com.maiitsoh.quirebind.convert.PdfPageRenderer.Block.BlockType;
 import com.maiitsoh.quirebind.core.model.PaperSize;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
- * Converts an HTML file to a PDF using OpenHTMLtoPDF.
+ * Converts an HTML file to a paginated PDF using PDFBox.
  *
- * <p>The input HTML should be well-formed XHTML. The output PDF page size is derived
- * from the supplied {@link PaperSize}. A minimal default stylesheet is applied if the
- * HTML does not supply its own.
- *
- * <p>The output is written to a caller-supplied temp file path that the caller is
- * responsible for deleting when no longer needed.
+ * <p>Parses the HTML via jsoup and extracts headings, paragraphs, and lists,
+ * then renders them with {@link PdfPageRenderer}. Full CSS layout is not supported;
+ * visual fidelity is sufficient for bookbinding preparation.
  */
 public final class HtmlToPdfConverter {
+
+    private static final Set<String> HEADING_TAGS = Set.of("h1", "h2", "h3", "h4", "h5", "h6");
+    private static final Set<String> BLOCK_TAGS =
+        Set.of("p", "div", "section", "article", "header", "footer", "main",
+               "blockquote", "pre", "figure", "figcaption", "address");
+    private static final Set<String> LIST_TAGS = Set.of("ul", "ol");
 
     private HtmlToPdfConverter() {
     }
@@ -54,50 +63,67 @@ public final class HtmlToPdfConverter {
         Objects.requireNonNull(htmlFile, "htmlFile");
         Objects.requireNonNull(paperSize, "paperSize");
         String html = Files.readString(htmlFile);
-        return convertHtml(html, htmlFile.toUri().toString(), paperSize);
+        return convertHtml(html, paperSize);
     }
 
     /**
      * Converts an HTML string to a PDF written to a new temp file.
      *
-     * @param html       the HTML content; must not be null
-     * @param baseUri    base URI used to resolve relative resources; may be null
-     * @param paperSize  target page size; must not be null
+     * @param html      the HTML content; must not be null
+     * @param paperSize target page size; must not be null
      * @return path to the generated PDF temp file
      * @throws IOException if writing the PDF fails
      */
-    public static Path convertHtml(String html, String baseUri, PaperSize paperSize)
-            throws IOException {
+    public static Path convertHtml(String html, PaperSize paperSize) throws IOException {
         Objects.requireNonNull(html, "html");
         Objects.requireNonNull(paperSize, "paperSize");
-        Path out = Files.createTempFile("quire-convert-", ".pdf");
-        try (OutputStream os = Files.newOutputStream(out)) {
-            float[] dims = pageDimsMm(paperSize);
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.useDefaultPageSize(dims[0], dims[1], PdfRendererBuilder.PageSizeUnits.MM);
-            builder.withHtmlContent(html, baseUri);
-            builder.toStream(os);
-            builder.run();
-        } catch (IOException e) {
-            Files.deleteIfExists(out);
-            throw e;
-        } catch (Exception e) {
-            Files.deleteIfExists(out);
-            throw new IOException("HTML to PDF conversion failed: " + e.getMessage(), e);
-        }
-        return out;
+        Document doc = Jsoup.parse(html);
+        List<Block> blocks = extractBlocks(doc.body() != null ? doc.body() : doc);
+        return PdfPageRenderer.render(blocks, paperSize);
     }
 
-    /** Returns {widthMm, heightMm} for the given paper size. */
-    static float[] pageDimsMm(PaperSize size) {
-        return switch (size) {
-            case A3         -> new float[]{297f, 420f};
-            case A4         -> new float[]{210f, 297f};
-            case A5         -> new float[]{148f, 210f};
-            case LETTER     -> new float[]{216f, 279f};
-            case LEGAL      -> new float[]{216f, 356f};
-            case HALF_LETTER -> new float[]{140f, 216f};
-            case CUSTOM     -> new float[]{210f, 297f}; // fall back to A4
-        };
+    private static List<Block> extractBlocks(Element root) {
+        List<Block> blocks = new ArrayList<>();
+        for (Element el : root.children()) {
+            String tag = el.tagName().toLowerCase();
+            if (HEADING_TAGS.contains(tag)) {
+                int level = tag.charAt(1) - '0';
+                String text = el.text().trim();
+                if (!text.isEmpty()) {
+                    blocks.add(new Block(BlockType.HEADING, text, level));
+                    blocks.add(new Block(BlockType.BLANK, "", 0));
+                }
+            } else if (LIST_TAGS.contains(tag)) {
+                for (Element li : el.select("> li")) {
+                    String text = li.text().trim();
+                    if (!text.isEmpty()) {
+                        blocks.add(new Block(BlockType.LIST_ITEM, text, 0));
+                    }
+                }
+                blocks.add(new Block(BlockType.BLANK, "", 0));
+            } else if (BLOCK_TAGS.contains(tag)) {
+                String text = el.text().trim();
+                if (!text.isEmpty()) {
+                    blocks.add(new Block(BlockType.PARAGRAPH, text, 0));
+                    blocks.add(new Block(BlockType.BLANK, "", 0));
+                }
+            } else {
+                // Recurse into container elements
+                blocks.addAll(extractBlocks(el));
+            }
+        }
+        // If nothing extracted, fall back to full text
+        if (blocks.isEmpty()) {
+            String text = root.text().trim();
+            if (!text.isEmpty()) {
+                for (String para : text.split("\n\n+")) {
+                    if (!para.isBlank()) {
+                        blocks.add(new Block(BlockType.PARAGRAPH, para.trim(), 0));
+                        blocks.add(new Block(BlockType.BLANK, "", 0));
+                    }
+                }
+            }
+        }
+        return blocks;
     }
 }

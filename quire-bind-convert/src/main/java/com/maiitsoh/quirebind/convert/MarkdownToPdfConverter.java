@@ -18,34 +18,38 @@
  */
 package com.maiitsoh.quirebind.convert;
 
-import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.ast.BulletList;
+import com.vladsch.flexmark.ast.BulletListItem;
+import com.vladsch.flexmark.ast.Heading;
+import com.vladsch.flexmark.ast.OrderedList;
+import com.vladsch.flexmark.ast.OrderedListItem;
+import com.vladsch.flexmark.ast.Paragraph;
+import com.vladsch.flexmark.ast.SoftLineBreak;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
+import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
+import com.maiitsoh.quirebind.convert.PdfPageRenderer.Block;
+import com.maiitsoh.quirebind.convert.PdfPageRenderer.Block.BlockType;
 import com.maiitsoh.quirebind.core.model.PaperSize;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Converts a Markdown file (.md / .markdown) to a PDF via HTML.
+ * Converts a Markdown file (.md / .markdown) to a paginated PDF using PDFBox.
  *
- * <p>Markdown is parsed using flexmark-java (CommonMark compatible), wrapped in a
- * minimal HTML page with page-size and margin CSS, then converted to PDF by
- * {@link HtmlToPdfConverter}.
+ * <p>Parses CommonMark via flexmark-java and renders headings, paragraphs, and
+ * lists using {@link PdfPageRenderer}.
  */
 public final class MarkdownToPdfConverter {
 
-    private static final Parser PARSER;
-    private static final HtmlRenderer RENDERER;
-
-    static {
-        MutableDataSet options = new MutableDataSet();
-        PARSER = Parser.builder(options).build();
-        RENDERER = HtmlRenderer.builder(options).build();
-    }
+    private static final Parser PARSER =
+        Parser.builder(new MutableDataSet()).build();
 
     private MarkdownToPdfConverter() {
     }
@@ -62,61 +66,71 @@ public final class MarkdownToPdfConverter {
         Objects.requireNonNull(mdFile, "mdFile");
         Objects.requireNonNull(paperSize, "paperSize");
         String markdown = Files.readString(mdFile);
-        return convertMarkdown(markdown, mdFile.getFileName().toString(), paperSize);
+        return convertMarkdown(markdown, paperSize);
     }
 
     /**
      * Converts a Markdown string to a PDF written to a new temp file.
      *
      * @param markdown  the Markdown source; must not be null
-     * @param title     document title used in the HTML {@code <title>} element
      * @param paperSize target page size; must not be null
      * @return path to the generated PDF temp file
      * @throws IOException if writing the PDF fails
      */
-    public static Path convertMarkdown(String markdown, String title, PaperSize paperSize)
-            throws IOException {
+    public static Path convertMarkdown(String markdown, PaperSize paperSize) throws IOException {
         Objects.requireNonNull(markdown, "markdown");
         Objects.requireNonNull(paperSize, "paperSize");
         Document doc = PARSER.parse(markdown);
-        String body = RENDERER.render(doc);
-        float[] dims = HtmlToPdfConverter.pageDimsMm(paperSize);
-        String html = buildHtmlPage(title != null ? title : "Document", body, dims);
-        return HtmlToPdfConverter.convertHtml(html, null, paperSize);
+        List<Block> blocks = extractBlocks(doc);
+        return PdfPageRenderer.render(blocks, paperSize);
     }
 
-    private static String buildHtmlPage(String title, String body, float[] dims) {
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            + "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""
-            + " \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
-            + "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
-            + "<head>\n"
-            + "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n"
-            + "  <title>" + escapeXml(title) + "</title>\n"
-            + "  <style type=\"text/css\">\n"
-            + "    @page { size: " + dims[0] + "mm " + dims[1] + "mm; margin: 20mm; }\n"
-            + "    body  { font-family: Georgia, serif; font-size: 11pt; line-height: 1.5; "
-            + "            color: #000; }\n"
-            + "    h1    { font-size: 20pt; margin: 0 0 12pt; }\n"
-            + "    h2    { font-size: 15pt; margin: 14pt 0 8pt; }\n"
-            + "    h3    { font-size: 12pt; margin: 10pt 0 6pt; }\n"
-            + "    p     { margin: 0 0 8pt; }\n"
-            + "    pre   { font-family: monospace; font-size: 9pt; background: #f5f5f5;"
-            + "            padding: 6pt; white-space: pre-wrap; }\n"
-            + "    code  { font-family: monospace; font-size: 9pt; }\n"
-            + "    ul, ol { margin: 0 0 8pt 20pt; }\n"
-            + "    blockquote { margin: 8pt 0 8pt 20pt; border-left: 3pt solid #ccc;"
-            + "                 padding-left: 8pt; color: #555; }\n"
-            + "  </style>\n"
-            + "</head>\n"
-            + "<body>\n"
-            + body + "\n"
-            + "</body>\n"
-            + "</html>";
+    private static List<Block> extractBlocks(Node root) {
+        List<Block> blocks = new ArrayList<>();
+        for (Node child : root.getChildren()) {
+            if (child instanceof Heading h) {
+                String text = h.getText().toString().trim();
+                if (!text.isEmpty()) {
+                    blocks.add(new Block(BlockType.HEADING, text, h.getLevel()));
+                    blocks.add(new Block(BlockType.BLANK, "", 0));
+                }
+            } else if (child instanceof Paragraph p) {
+                String text = flatText(p);
+                if (!text.isEmpty()) {
+                    blocks.add(new Block(BlockType.PARAGRAPH, text, 0));
+                    blocks.add(new Block(BlockType.BLANK, "", 0));
+                }
+            } else if (child instanceof BulletList || child instanceof OrderedList) {
+                for (Node item : child.getChildren()) {
+                    if (item instanceof BulletListItem || item instanceof OrderedListItem) {
+                        // First paragraph inside the list item
+                        Node first = item.getFirstChild();
+                        String text = first != null ? flatText(first) : "";
+                        if (!text.isEmpty()) {
+                            blocks.add(new Block(BlockType.LIST_ITEM, text, 0));
+                        }
+                    }
+                }
+                blocks.add(new Block(BlockType.BLANK, "", 0));
+            } else {
+                // Recurse into block containers
+                blocks.addAll(extractBlocks(child));
+            }
+        }
+        return blocks;
     }
 
-    private static String escapeXml(String text) {
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                   .replace("\"", "&quot;").replace("'", "&apos;");
+    private static String flatText(Node node) {
+        StringBuilder sb = new StringBuilder();
+        for (Node child : node.getChildren()) {
+            if (child instanceof SoftLineBreak) {
+                sb.append(' ');
+            } else if (child.getFirstChild() == null) {
+                sb.append(child.getChars().toString());
+            } else {
+                sb.append(flatText(child));
+            }
+        }
+        return sb.toString().trim();
     }
 }

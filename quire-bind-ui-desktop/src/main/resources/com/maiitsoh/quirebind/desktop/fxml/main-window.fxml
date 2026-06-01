@@ -83,7 +83,7 @@
                                     styleClass="action-button" prefWidth="32"/>
                             <Button text="↓" onAction="#handleMoveSourceDown"
                                     styleClass="action-button" prefWidth="32"/>
-                            <Button text="Add PDF…" onAction="#handleBrowseInput"
+                            <Button text="Add file…" onAction="#handleBrowseInput"
                                     styleClass="action-button"/>
                             <Button text="Remove" onAction="#handleRemoveSourcePdf"
                                     styleClass="action-button"/>
