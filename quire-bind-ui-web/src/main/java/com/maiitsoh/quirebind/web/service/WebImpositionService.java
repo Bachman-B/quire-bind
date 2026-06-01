@@ -160,6 +160,20 @@ public class WebImpositionService {
             return List.of();
         }
         ImpositionGroup group = BindingGroupMapper.groupFor(session.getTechnique());
+
+        // Group A (flat binding): aggregate into one row — total content pages + physical sheets
+        if (group == ImpositionGroup.A) {
+            long content = all.stream()
+                .flatMap(sig -> sig.getSheets().stream())
+                .flatMap(sh -> java.util.stream.Stream.concat(
+                    sh.getFrontPages().stream(), sh.getBackPages().stream()))
+                .filter(p -> p.getPageType() == com.maiitsoh.quirebind.core.model.PageType.CONTENT
+                          || p.getPageType() == com.maiitsoh.quirebind.core.model.PageType.AESTHETIC)
+                .count();
+            int sheets = (int) Math.ceil(content / 2.0);
+            return List.of(new SignatureSummary("Body", 1, (int) content, 0));
+        }
+
         int frontCount = session.getFrontMatterPageCount();
         int rearCount = session.getRearMatterPageCount();
         int total = seq.pageCount();

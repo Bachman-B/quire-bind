@@ -344,8 +344,14 @@ public final class MainController implements Initializable {
         colSigIndex.setCellValueFactory(r -> new SimpleIntegerProperty(r.getValue().index()));
         colPageCount.setCellValueFactory(
             r -> new SimpleIntegerProperty(r.getValue().pageCount()));
-        colSheetCount.setCellValueFactory(
-            r -> new SimpleIntegerProperty(r.getValue().sheetCount()));
+        colSheetCount.setCellValueFactory(r -> new SimpleIntegerProperty(r.getValue().sheetCount()));
+        colSheetCount.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
+            @Override
+            protected void updateItem(Number val, boolean empty) {
+                super.updateItem(val, empty);
+                setText(empty || val == null ? null : val.intValue() == 0 ? "—" : val.toString());
+            }
+        });
         colCreep.setCellValueFactory(r -> new SimpleStringProperty(r.getValue().creepSummary()));
 
         // Drag-and-drop reordering for the source PDF list
@@ -1497,18 +1503,33 @@ public final class MainController implements Initializable {
 
         List<SignatureRow> rows = new ArrayList<>();
         List<Signature> all = zonedResult.allSignatures();
-        int frontEnd = zonedResult.frontSigCount();
-        int bodyEnd = frontEnd + zonedResult.bodySigCount();
         double thicknessMm = state.getPaperThicknessMm();
-        for (int i = 0; i < all.size(); i++) {
-            String zone = i < frontEnd ? "Front Matter"
-                : i < bodyEnd ? "Body" : "Rear Matter";
-            rows.add(SignatureRow.from(all.get(i), zone, thicknessMm));
+
+        if (group == ImpositionGroup.A) {
+            // Group A (Perfect Binding, Spiral, Japanese Stab): flat stacking, no folding.
+            // Show total content pages only — how the user prints them (simplex/duplex/etc.)
+            // is outside QuireBind's scope.
+            long totalContent = all.stream()
+                .flatMap(sig -> sig.getSheets().stream())
+                .flatMap(sh -> java.util.stream.Stream.concat(
+                    sh.getFrontPages().stream(), sh.getBackPages().stream()))
+                .filter(p -> p.getPageType() == PageType.CONTENT
+                          || p.getPageType() == PageType.AESTHETIC)
+                .count();
+            rows.add(new SignatureRow(1, (int) totalContent, 0, "—", "Body"));
+            setStatus("Imposition: " + totalContent + " page(s).");
+        } else {
+            int frontEnd = zonedResult.frontSigCount();
+            int bodyEnd = frontEnd + zonedResult.bodySigCount();
+            for (int i = 0; i < all.size(); i++) {
+                String zone = i < frontEnd ? "Front Matter"
+                    : i < bodyEnd ? "Body" : "Rear Matter";
+                rows.add(SignatureRow.from(all.get(i), zone, thicknessMm));
+            }
+            int totalSheets = all.stream().mapToInt(s -> s.getSheets().size()).sum();
+            setStatus("Imposition: " + all.size() + " signature(s), " + totalSheets + " sheet(s).");
         }
         signaturesTable.setItems(FXCollections.observableArrayList(rows));
-
-        int totalSheets = all.stream().mapToInt(s -> s.getSheets().size()).sum();
-        setStatus("Imposition: " + all.size() + " signature(s), " + totalSheets + " sheet(s).");
     }
 
     private ZonedResult imposeWithZones(
