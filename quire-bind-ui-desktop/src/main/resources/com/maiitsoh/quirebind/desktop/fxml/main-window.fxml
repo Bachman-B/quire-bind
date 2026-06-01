@@ -194,12 +194,16 @@
                                           GridPane.rowIndex="3" GridPane.columnIndex="1"
                                           maxWidth="Infinity"/>
 
-                                <Label text="Paper thickness (mm):"
+                                <Label text="Paper thickness:"
                                        GridPane.rowIndex="4" GridPane.columnIndex="0"
                                        styleClass="field-label"/>
-                                <TextField fx:id="thicknessField"
-                                           GridPane.rowIndex="4" GridPane.columnIndex="1"
-                                           promptText="blank = no creep" maxWidth="140"/>
+                                <HBox spacing="4" alignment="CENTER_LEFT"
+                                      GridPane.rowIndex="4" GridPane.columnIndex="1">
+                                    <TextField fx:id="thicknessField"
+                                               promptText="e.g. 0.10 or 0,10"
+                                               maxWidth="110"/>
+                                    <Label text="mm" styleClass="field-label"/>
+                                </HBox>
                             </GridPane>
 
                             <!-- Padding position (group C only) -->

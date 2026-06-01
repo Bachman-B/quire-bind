@@ -1493,10 +1493,11 @@ public final class MainController implements Initializable {
         List<Signature> all = zonedResult.allSignatures();
         int frontEnd = zonedResult.frontSigCount();
         int bodyEnd = frontEnd + zonedResult.bodySigCount();
+        double thicknessMm = state.getPaperThicknessMm();
         for (int i = 0; i < all.size(); i++) {
             String zone = i < frontEnd ? "Front Matter"
                 : i < bodyEnd ? "Body" : "Rear Matter";
-            rows.add(SignatureRow.from(all.get(i), zone));
+            rows.add(SignatureRow.from(all.get(i), zone, thicknessMm));
         }
         signaturesTable.setItems(FXCollections.observableArrayList(rows));
 
@@ -1793,8 +1794,8 @@ public final class MainController implements Initializable {
             applyCreepCheck.setSelected(false);
         }
         creepInfoLabel.setText(hasThickness
-            ? String.format("Paper: %.2f mm", state.getPaperThicknessMm())
-            : "Enter paper thickness above to enable");
+            ? String.format("%.4g mm → max creep calculated on export", state.getPaperThicknessMm())
+            : "Enter paper thickness in Step 2 to enable");
     }
 
     private void collectMarksState() {
@@ -1892,12 +1893,14 @@ public final class MainController implements Initializable {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private double parseThickness() {
-        String text = thicknessField.getText().trim();
+        // Accept both '.' and ',' as decimal separator
+        String text = thicknessField.getText().trim().replace(',', '.');
         if (text.isEmpty()) {
             return 0.0;
         }
         try {
-            return Double.parseDouble(text);
+            double v = Double.parseDouble(text);
+            return v > 0 ? v : 0.0;
         } catch (NumberFormatException e) {
             return 0.0;
         }
@@ -2034,10 +2037,13 @@ public final class MainController implements Initializable {
     public record SignatureRow(int index, int pageCount, int sheetCount, String creepSummary,
             String zone) {
 
-        static SignatureRow from(Signature sig, String zone) {
-            double maxCreep = sig.getSheets().stream()
-                .mapToDouble(s -> s.getCreepResult().map(r -> r.getCreepMm()).orElse(0.0))
-                .max().orElse(0.0);
+        static SignatureRow from(Signature sig, String zone, double paperThicknessMm) {
+            // Creep is computed directly: innermost sheet creeps most (sheetIndex × 2 × thickness)
+            double maxCreep = paperThicknessMm > 0
+                ? sig.getSheets().stream()
+                    .mapToDouble(s -> s.getSheetIndex() * 2.0 * paperThicknessMm)
+                    .max().orElse(0.0)
+                : 0.0;
             String creep = maxCreep > 0
                 ? String.format("%.3f mm", maxCreep) : "—";
             return new SignatureRow(
