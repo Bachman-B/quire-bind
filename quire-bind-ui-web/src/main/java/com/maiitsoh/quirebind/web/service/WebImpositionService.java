@@ -118,14 +118,26 @@ public class WebImpositionService {
                     .build();
                 creepConfig = CreepCalculator.calculate(session.getImpositionResult(), base);
             }
-            PdfImpositionWriter.write(
-                session.getImpositionResult(),
-                session.getSourceDocPaths(),
-                tempOut,
-                session.getPaperSize(),
-                markConfig,
-                numberingConfig,
-                creepConfig);
+            ImpositionGroup group = BindingGroupMapper.groupFor(session.getTechnique());
+            if (group == ImpositionGroup.A) {
+                PdfImpositionWriter.writeGroupA(
+                    session.getImpositionResult(),
+                    session.getSourceDocPaths(),
+                    tempOut,
+                    session.getPaperSize(),
+                    markConfig,
+                    numberingConfig,
+                    creepConfig);
+            } else {
+                PdfImpositionWriter.write(
+                    session.getImpositionResult(),
+                    session.getSourceDocPaths(),
+                    tempOut,
+                    session.getPaperSize(),
+                    markConfig,
+                    numberingConfig,
+                    creepConfig);
+            }
             Files.copy(tempOut, outputStream);
         } finally {
             Files.deleteIfExists(tempOut);

@@ -1656,14 +1656,26 @@ public final class MainController implements Initializable {
                     .build();
                 creepConfig = CreepCalculator.calculate(state.getImpositionResult(), base);
             }
-            PdfImpositionWriter.write(
-                state.getImpositionResult(),
-                state.getSourceDocPaths(),
-                state.getOutputPdf(),
-                state.getPaperSize(),
-                markConfig,
-                numberingConfig,
-                creepConfig);
+            ImpositionGroup exportGroup = BindingGroupMapper.groupFor(state.getTechnique());
+            if (exportGroup == ImpositionGroup.A) {
+                PdfImpositionWriter.writeGroupA(
+                    state.getImpositionResult(),
+                    state.getSourceDocPaths(),
+                    state.getOutputPdf(),
+                    state.getPaperSize(),
+                    markConfig,
+                    numberingConfig,
+                    creepConfig);
+            } else {
+                PdfImpositionWriter.write(
+                    state.getImpositionResult(),
+                    state.getSourceDocPaths(),
+                    state.getOutputPdf(),
+                    state.getPaperSize(),
+                    markConfig,
+                    numberingConfig,
+                    creepConfig);
+            }
             exportResultLabel.setText("Exported: " + state.getOutputPdf().getFileName());
             setStatus("Export complete.");
         } catch (IOException e) {

@@ -44,6 +44,8 @@ import org.apache.pdfbox.util.Matrix;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,6 +203,110 @@ public final class PdfImpositionWriter {
         } finally {
             closeAll(openDocs);
         }
+    }
+
+    /**
+     * Writes an imposed PDF for Group A (Perfect Binding, Spiral, Japanese Stab).
+     *
+     * <p>Group A has no folding — each physical sheet carries exactly one source page on
+     * the front and one on the back. The output PDF therefore contains one full-size
+     * portrait page per source page, in reading order. Blank filler pages added by the
+     * padding step are omitted from the output.
+     *
+     * @param signatures      composed signatures; must not be null
+     * @param sourceDocPaths  map from document ID to file path; may be null or empty
+     * @param outputPath      destination path; must not be null
+     * @param paperSize       book page size; must not be null
+     * @param markConfig      output marks; null disables all marks
+     * @param numberingConfig folio rendering; null disables folios
+     * @param creepConfig     creep compensation; null or {@code applyToOutput=false} skips
+     * @throws IOException if any file operation fails
+     */
+    public static void writeGroupA(
+            List<Signature> signatures,
+            Map<String, Path> sourceDocPaths,
+            Path outputPath,
+            PaperSize paperSize,
+            MarkConfig markConfig,
+            NumberingConfig numberingConfig,
+            CreepConfig creepConfig) throws IOException {
+        Objects.requireNonNull(signatures, "signatures");
+        Objects.requireNonNull(outputPath, "outputPath");
+        Objects.requireNonNull(paperSize, "paperSize");
+
+        MarkConfig marks = markConfig != null ? markConfig : MarkConfig.builder().build();
+
+        // Collect all content/aesthetic pages from every sheet across all signatures,
+        // then sort by physicalPosition to restore reading order.
+        List<QuirePage> pages = new ArrayList<>();
+        for (Signature sig : signatures) {
+            for (ImposedSheet sheet : sig.getSheets()) {
+                pages.addAll(sheet.getFrontPages());
+                pages.addAll(sheet.getBackPages());
+            }
+        }
+        pages.sort(Comparator.comparingInt(QuirePage::getPhysicalPosition));
+        pages.removeIf(p -> p.getPageType() == PageType.FILLER_BLANK
+                         || p.getPageType() == PageType.COMPLETION_BLANK);
+
+        PDRectangle bookRect = bookPageRect(paperSize);
+        float pageW = bookRect.getWidth();
+        float pageH = bookRect.getHeight();
+        PDFont font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        Map<String, PDDocument> openDocs = openSourceDocs(sourceDocPaths);
+        try {
+            try (PDDocument outDoc = new PDDocument()) {
+                for (QuirePage page : pages) {
+                    PDPage outPage = new PDPage(bookRect);
+                    outDoc.addPage(outPage);
+                    try (PDPageContentStream cs = new PDPageContentStream(outDoc, outPage)) {
+                        placePageFullSize(outDoc, new LayerUtility(outDoc), cs,
+                            openDocs, page, pageW, pageH);
+                        if (marks.isTrimLines()) {
+                            renderTrimLines(cs, 0f, pageW, pageH);
+                        }
+                        if (numberingConfig != null) {
+                            renderFolio(cs, page, numberingConfig, font, 0f, pageW, pageH);
+                        }
+                    }
+                }
+                outDoc.save(outputPath.toFile());
+            }
+        } finally {
+            closeAll(openDocs);
+        }
+    }
+
+    private static void placePageFullSize(
+            PDDocument outDoc,
+            LayerUtility layers,
+            PDPageContentStream cs,
+            Map<String, PDDocument> srcDocs,
+            QuirePage page,
+            float pageW,
+            float pageH) throws IOException {
+        if (page.getPageType() != PageType.CONTENT
+                && page.getPageType() != PageType.AESTHETIC) {
+            return;
+        }
+        if (page.getSourcePageIndex().isEmpty()) {
+            return;
+        }
+        String docId = page.getSourceDocumentId().orElse(null);
+        PDDocument srcDoc = docId != null ? srcDocs.get(docId) : null;
+        if (srcDoc == null) {
+            return;
+        }
+        int srcIdx = page.getSourcePageIndex().get();
+        PDFormXObject form = layers.importPageAsForm(srcDoc, srcIdx);
+        PDRectangle srcBox = srcDoc.getPage(srcIdx).getMediaBox();
+        float scale = Math.min(pageW / srcBox.getWidth(), pageH / srcBox.getHeight());
+        float tx = (pageW - srcBox.getWidth() * scale) / 2f;
+        float ty = (pageH - srcBox.getHeight() * scale) / 2f;
+        cs.saveGraphicsState();
+        cs.transform(new Matrix(scale, 0, 0, scale, tx, ty));
+        cs.drawForm(form);
+        cs.restoreGraphicsState();
     }
 
     private static Map<String, PDDocument> openSourceDocs(Map<String, Path> sourceDocPaths)

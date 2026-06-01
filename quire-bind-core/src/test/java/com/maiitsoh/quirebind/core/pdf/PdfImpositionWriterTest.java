@@ -65,6 +65,23 @@ class PdfImpositionWriterTest {
         return out;
     }
 
+    private List<Signature> imposeSinglePage(Path sourcePdf) throws IOException {
+        PageSequence seq = PdfPageLoader.load(sourcePdf);
+        QuireProject project = QuireProject.builder()
+                .name("Test")
+                .bindingTechnique(BindingTechnique.PERFECT_BINDING)
+                .paperSize(PaperSize.A4)
+                .readingDirection(ReadingDirection.LTR)
+                .layout(ImpositionLayout.FOLIO)
+                .pageSequence(seq)
+                .paddingConfig(PaddingConfig.builder().build())
+                .numberingConfig(NumberingConfig.builder().build())
+                .markConfig(MarkConfig.builder().build())
+                .creepConfig(CreepConfig.builder().build())
+                .build();
+        return ImpositionEngine.impose(project);
+    }
+
     private List<Signature> imposeFourContentPages(Path sourcePdf) throws IOException {
         PageSequence seq = PdfPageLoader.load(sourcePdf);
         QuireProject project = QuireProject.builder()
@@ -488,6 +505,42 @@ class PdfImpositionWriterTest {
                 creepConfig);
         try (PDDocument doc = Loader.loadPDF(out.toFile())) {
             assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writeGroupAOneContentPageProducesOneOutputPage() throws IOException {
+        Path src = createSourcePdf(1);
+        Path out = tempDir.resolve("out-group-a.pdf");
+        List<Signature> sigs = imposeSinglePage(src);
+        PdfImpositionWriter.writeGroupA(
+                sigs,
+                Map.of(src.toString(), src),
+                out,
+                PaperSize.A4,
+                MarkConfig.builder().build(),
+                null,
+                null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(1, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writeGroupAFourContentPagesProducesFourOutputPages() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out-group-a-4.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        PdfImpositionWriter.writeGroupA(
+                sigs,
+                Map.of(src.toString(), src),
+                out,
+                PaperSize.A4,
+                MarkConfig.builder().build(),
+                null,
+                null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(4, doc.getNumberOfPages());
         }
     }
 
