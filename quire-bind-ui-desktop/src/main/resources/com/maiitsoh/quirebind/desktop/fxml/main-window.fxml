@@ -403,15 +403,10 @@
                                       text="Suppress folio on first page"/>
                             <Separator/>
                             <Label text="Output File" styleClass="section-label"/>
-                            <HBox spacing="8" alignment="CENTER_LEFT">
-                                <TextField fx:id="outputPathField"
-                                           promptText="No output chosen"
-                                           editable="false" HBox.hgrow="ALWAYS"/>
-                                <Button text="Browse…" onAction="#handleBrowseOutput"
-                                        styleClass="action-button"/>
-                            </HBox>
-                            <Button fx:id="exportButton" text="Export PDF"
-                                    onAction="#handleExport"
+                            <TextField fx:id="outputPathField"
+                                       promptText="Not yet exported"
+                                       editable="false"/>
+                            <Button text="Export PDF…" onAction="#handleExportDialog"
                                     styleClass="primary-button" maxWidth="Infinity"/>
                             <Button text="Save as .quire template…"
                                     onAction="#handleSaveTemplate"

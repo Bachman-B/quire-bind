@@ -93,16 +93,20 @@ public final class HtmlToPdfConverter {
     }
 
     private static String injectPageSize(String html, PaperSize paperSize) {
-        if (html.contains("@page")) {
-            return html;
-        }
         float[] dims = pageDimsMm(paperSize);
-        String pageRule = "<style>@page{size:" + dims[0] + "mm " + dims[1] + "mm;}</style>";
+        // Inject a normalisation block: zero body margin/padding, proper page size.
+        // If the HTML already has an @page rule we still inject ours first so it
+        // acts as a fallback; the author's rule wins via CSS cascade.
+        String inject = "<style>"
+            + "html,body{margin:0!important;padding:0!important;"
+            + "min-height:0!important;}"
+            + "@page{size:" + dims[0] + "mm " + dims[1] + "mm;margin:10mm;}"
+            + "</style>";
         int head = html.indexOf("</head>");
         if (head >= 0) {
-            return html.substring(0, head) + pageRule + html.substring(head);
+            return html.substring(0, head) + inject + html.substring(head);
         }
-        return pageRule + html;
+        return inject + html;
     }
 
     static float[] pageDimsMm(PaperSize size) {

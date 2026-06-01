@@ -212,7 +212,6 @@ public final class MainController implements Initializable {
     @FXML private TableColumn<SignatureRow, Number> colSheetCount;
     @FXML private TableColumn<SignatureRow, String> colCreep;
     @FXML private TextField outputPathField;
-    @FXML private Button exportButton;
     @FXML private Label exportResultLabel;
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -1592,27 +1591,31 @@ public final class MainController implements Initializable {
     }
 
     @FXML
-    private void handleBrowseOutput() {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Save Imposed PDF As");
-        fc.getExtensionFilters().add(new ExtensionFilter("PDF Files", "*.pdf"));
-        File f = fc.showSaveDialog(wizardStack.getScene().getWindow());
-        if (f != null) {
-            if (!f.getName().endsWith(".pdf")) {
-                f = new File(f.getParentFile(), f.getName() + ".pdf");
-            }
-            state.setOutputPdf(f.toPath());
-            outputPathField.setText(f.toString());
-            exportButton.setDisable(false);
-        }
-    }
-
-    @FXML
-    private void handleExport() {
-        if (state.getOutputPdf() == null) {
-            showError("No output path", "Please choose an output file first.");
+    private void handleExportDialog() {
+        if (!state.hasImpositionResult()) {
+            showError("Not imposed", "Imposition has not been computed yet.");
             return;
         }
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Export Imposed PDF");
+        fc.getExtensionFilters().add(new ExtensionFilter("PDF Files", "*.pdf"));
+        if (state.getOutputPdf() != null) {
+            fc.setInitialDirectory(state.getOutputPdf().getParent().toFile());
+            fc.setInitialFileName(state.getOutputPdf().getFileName().toString());
+        }
+        File f = fc.showSaveDialog(wizardStack.getScene().getWindow());
+        if (f == null) {
+            return;
+        }
+        if (!f.getName().endsWith(".pdf")) {
+            f = new File(f.getParentFile(), f.getName() + ".pdf");
+        }
+        state.setOutputPdf(f.toPath());
+        outputPathField.setText(f.toString());
+        handleExport();
+    }
+
+    private void handleExport() {
         if (!state.hasImpositionResult()) {
             showError("Not imposed", "Imposition has not been computed yet.");
             return;
@@ -1662,7 +1665,6 @@ public final class MainController implements Initializable {
                 numberingConfig,
                 creepConfig);
             exportResultLabel.setText("Exported: " + state.getOutputPdf().getFileName());
-            exportButton.setDisable(true);
             setStatus("Export complete.");
         } catch (IOException e) {
             showError("Export failed", e.getMessage());
@@ -1704,9 +1706,12 @@ public final class MainController implements Initializable {
 
     @FXML
     private void handleNext() {
-        if (currentStep == STEP_BATCH_RUN || currentStep >= TOTAL_STEPS - 1) {
+        if (currentStep == STEP_BATCH_RUN) {
             handleMenuNewProject();
             return;
+        }
+        if (currentStep >= TOTAL_STEPS - 1) {
+            return; // Next is hidden on the last step; nothing to do
         }
         if (!validateCurrentStep()) {
             return;
@@ -1735,7 +1740,6 @@ public final class MainController implements Initializable {
                 ex.printStackTrace(System.err);
                 showError("Imposition failed", ex.getMessage());
             }
-            exportButton.setDisable(false);
         }
         showStep(next);
     }
@@ -1869,8 +1873,12 @@ public final class MainController implements Initializable {
             stepIndicatorLabel.setText("Step " + (step + 1) + " of " + TOTAL_STEPS);
             backButton.setDisable(step == 0);
             boolean isLast = step == TOTAL_STEPS - 1;
-            nextButton.setText(isLast ? "↺ New Project" : "Next →");
-            nextButton.setDisable(false);
+            nextButton.setVisible(!isLast);
+            nextButton.setManaged(!isLast);
+            if (!isLast) {
+                nextButton.setText("Next →");
+                nextButton.setDisable(false);
+            }
         }
     }
 
