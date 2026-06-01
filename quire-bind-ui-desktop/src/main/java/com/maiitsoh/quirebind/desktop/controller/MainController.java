@@ -1346,7 +1346,13 @@ public final class MainController implements Initializable {
             return "  " + (idx + 1) + ".  " + custom;
         }
         String type = switch (page.getPageType()) {
-            case CONTENT -> "Content";
+            case CONTENT -> page.getSourceDocumentId()
+                .map(id -> {
+                    String fname = java.nio.file.Path.of(id).getFileName().toString();
+                    return fname + page.getSourcePageIndex()
+                        .map(i -> " p." + (i + 1)).orElse("");
+                })
+                .orElse("Content");
             case AESTHETIC -> "Decorative";
             case COMPLETION_BLANK -> "Completion blank";
             case FILLER_BLANK -> "Filler blank";

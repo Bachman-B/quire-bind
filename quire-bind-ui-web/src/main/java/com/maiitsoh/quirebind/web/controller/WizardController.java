@@ -384,6 +384,11 @@ public class WizardController {
             model.addAttribute("pageCount", 0);
             return;
         }
+        // Map temp path string → original filename for display in the page list
+        java.util.Map<String, String> sourceNames = new java.util.HashMap<>();
+        for (WebSession.SourceEntry e : session.getSources()) {
+            sourceNames.put(e.tempPath().toString(), e.filename());
+        }
         List<QuirePage> pages = seq.getPages();
         int total = pages.size();
         int frontCount = session.getFrontMatterPageCount();
@@ -403,7 +408,7 @@ public class WizardController {
                 + (bodyStart != 1 ? "s" : "") + " · " + sheets + " sheet"
                 + (sheets != 1 ? "s" : ""), "zone-front"));
             for (int i = 0; i < bodyStart; i++) {
-                items.add(PageRow.page(pages.get(i), i));
+                items.add(PageRow.page(pages.get(i), i, sourceNames));
             }
         }
 
@@ -420,7 +425,7 @@ public class WizardController {
                 items.add(PageRow.header("Signature " + sigNum
                     + " — " + sigPageCount + "/" + pps + " pages" + warning, "zone-body"));
             }
-            items.add(PageRow.page(pages.get(i), i));
+            items.add(PageRow.page(pages.get(i), i, sourceNames));
         }
 
         if (bodyEnd < total) {
@@ -430,7 +435,7 @@ public class WizardController {
                 + (rearActual != 1 ? "s" : "") + " · " + sheets + " sheet"
                 + (sheets != 1 ? "s" : ""), "zone-rear"));
             for (int i = bodyEnd; i < total; i++) {
-                items.add(PageRow.page(pages.get(i), i));
+                items.add(PageRow.page(pages.get(i), i, sourceNames));
             }
         }
 
@@ -445,9 +450,16 @@ public class WizardController {
             return new PageRow(-1, label, cssClass, true);
         }
 
-        static PageRow page(QuirePage p, int idx) {
+        static PageRow page(QuirePage p, int idx, java.util.Map<String, String> sourceNames) {
             String label = switch (p.getPageType()) {
-                case CONTENT -> "Content";
+                case CONTENT -> p.getSourceDocumentId()
+                    .map(id -> {
+                        String fname = sourceNames.getOrDefault(id,
+                            Path.of(id).getFileName().toString());
+                        return fname + p.getSourcePageIndex()
+                            .map(i -> " p." + (i + 1)).orElse("");
+                    })
+                    .orElse("Content");
                 case AESTHETIC -> "Decorative";
                 case COMPLETION_BLANK, FILLER_BLANK -> "Blank";
             };
