@@ -466,6 +466,32 @@ public final class MainController implements Initializable {
     }
 
     @FXML
+    private void handleMoveSourceUp() {
+        int idx = sourcePdfListView.getSelectionModel().getSelectedIndex();
+        if (idx <= 0) {
+            return;
+        }
+        state.moveInputPdfUp(idx);
+        String item = sourcePdfListView.getItems().remove(idx);
+        sourcePdfListView.getItems().add(idx - 1, item);
+        sourcePdfListView.getSelectionModel().select(idx - 1);
+        rebuildSequenceFromSources();
+    }
+
+    @FXML
+    private void handleMoveSourceDown() {
+        int idx = sourcePdfListView.getSelectionModel().getSelectedIndex();
+        if (idx < 0 || idx >= sourcePdfListView.getItems().size() - 1) {
+            return;
+        }
+        state.moveInputPdfDown(idx);
+        String item = sourcePdfListView.getItems().remove(idx);
+        sourcePdfListView.getItems().add(idx + 1, item);
+        sourcePdfListView.getSelectionModel().select(idx + 1);
+        rebuildSequenceFromSources();
+    }
+
+    @FXML
     private void handleBrowseQuire() {
         FileChooser fc = new FileChooser();
         fc.setTitle("Select .quire Batch File");

@@ -79,6 +79,10 @@
                         <HBox spacing="8" alignment="CENTER_LEFT">
                             <Label text="Source PDFs" styleClass="field-label"
                                    HBox.hgrow="ALWAYS"/>
+                            <Button text="↑" onAction="#handleMoveSourceUp"
+                                    styleClass="action-button" prefWidth="32"/>
+                            <Button text="↓" onAction="#handleMoveSourceDown"
+                                    styleClass="action-button" prefWidth="32"/>
                             <Button text="Add PDF…" onAction="#handleBrowseInput"
                                     styleClass="action-button"/>
                             <Button text="Remove" onAction="#handleRemoveSourcePdf"

@@ -28,7 +28,14 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
-- (nothing yet)
+- **App icon** — QuireBind now has a proper icon (stylised blue Q) across all
+  platforms: desktop window title bar, taskbar, deb/rpm/AppImage on Linux,
+  MSI installer and Start Menu on Windows, DMG on macOS.
+- **PDF source reordering** — the source list on the upload step now has ↑ / ↓
+  buttons to change the order of loaded PDFs without having to remove and
+  re-add them. Available in both the web wizard and the desktop app.
+- **AUR package** — a PKGBUILD is available under `packaging/aur/` for Arch
+  Linux users who prefer a native package over the AppImage.
 
 ---
 

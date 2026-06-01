@@ -483,6 +483,16 @@ a:hover { text-decoration: underline; }
 .add-pdf-form { margin-bottom: 8px; }
 .file-input-row { display: flex; gap: 8px; align-items: center; }
 .file-input-row .file-input { flex: 1; }
+.btn-icon-small {
+  padding: 1px 6px;
+  font-size: 0.78em;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.btn-icon-small:hover { background: var(--bg); border-color: var(--blue); color: var(--blue); }
 .btn-danger-small {
   padding: 2px 7px;
   font-size: 0.78em;

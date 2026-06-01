@@ -145,6 +145,24 @@ public final class WizardState {
         }
     }
 
+    /** Swaps the source at {@code index} with the one at {@code index - 1}. No-op if already first. */
+    public void moveInputPdfUp(int index) {
+        if (index > 0 && index < inputPdfs.size()) {
+            Path tmp = inputPdfs.get(index - 1);
+            inputPdfs.set(index - 1, inputPdfs.get(index));
+            inputPdfs.set(index, tmp);
+        }
+    }
+
+    /** Swaps the source at {@code index} with the one at {@code index + 1}. No-op if already last. */
+    public void moveInputPdfDown(int index) {
+        if (index >= 0 && index < inputPdfs.size() - 1) {
+            Path tmp = inputPdfs.get(index + 1);
+            inputPdfs.set(index + 1, inputPdfs.get(index));
+            inputPdfs.set(index, tmp);
+        }
+    }
+
     /**
      * Returns the first source PDF path, or {@code null} if none has been added.
      * Retained for compatibility — prefer {@link #getInputPdfs()} for multi-source use.

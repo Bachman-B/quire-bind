@@ -128,6 +128,30 @@ public class WebSession {
         }
     }
 
+    /**
+     * Swaps the source at {@code index} with the one at {@code index - 1}.
+     * No-op if index is 0 or out of range.
+     */
+    public void moveSourceUp(int index) {
+        if (index > 0 && index < sources.size()) {
+            SourceEntry tmp = sources.get(index - 1);
+            sources.set(index - 1, sources.get(index));
+            sources.set(index, tmp);
+        }
+    }
+
+    /**
+     * Swaps the source at {@code index} with the one at {@code index + 1}.
+     * No-op if index is the last entry or out of range.
+     */
+    public void moveSourceDown(int index) {
+        if (index >= 0 && index < sources.size() - 1) {
+            SourceEntry tmp = sources.get(index + 1);
+            sources.set(index + 1, sources.get(index));
+            sources.set(index, tmp);
+        }
+    }
+
     /** Removes all sources and deletes their temp files. */
     public void clearSources() {
         for (SourceEntry e : sources) {

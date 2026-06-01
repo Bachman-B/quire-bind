@@ -108,6 +108,32 @@ public class WizardController {
         return htmx != null ? STEP_UPLOAD : "index";
     }
 
+    /** Moves a source PDF one position up and re-renders the upload step. */
+    @PostMapping("/wizard/upload/move-up")
+    public String moveSourceUp(
+            @RequestParam("index") int index,
+            @RequestHeader(value = "HX-Request", required = false) String htmx,
+            Model model) throws IOException {
+        session.moveSourceUp(index);
+        session.setPageSequence(rebuildSequence());
+        session.setImpositionResult(null);
+        addUploadModel(model);
+        return htmx != null ? STEP_UPLOAD : "index";
+    }
+
+    /** Moves a source PDF one position down and re-renders the upload step. */
+    @PostMapping("/wizard/upload/move-down")
+    public String moveSourceDown(
+            @RequestParam("index") int index,
+            @RequestHeader(value = "HX-Request", required = false) String htmx,
+            Model model) throws IOException {
+        session.moveSourceDown(index);
+        session.setPageSequence(rebuildSequence());
+        session.setImpositionResult(null);
+        addUploadModel(model);
+        return htmx != null ? STEP_UPLOAD : "index";
+    }
+
     /** Removes a source PDF by index and re-renders the upload step. */
     @PostMapping("/wizard/upload/remove")
     public String removeSource(

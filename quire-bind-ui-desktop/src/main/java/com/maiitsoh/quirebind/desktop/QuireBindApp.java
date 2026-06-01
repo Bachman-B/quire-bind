@@ -21,10 +21,12 @@ package com.maiitsoh.quirebind.desktop;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 /** JavaFX Application entry point for the QuireBind desktop UI. */
@@ -42,6 +44,15 @@ public final class QuireBindApp extends Application {
             "/com/maiitsoh/quirebind/desktop/css/style.css");
         if (css != null) {
             scene.getStylesheets().add(css.toExternalForm());
+        }
+
+        for (int size : new int[]{512, 256, 128, 64, 32, 16}) {
+            String path = "/com/maiitsoh/quirebind/desktop/icons/quire-bind-" + size + ".png";
+            try (InputStream in = getClass().getResourceAsStream(path)) {
+                if (in != null) {
+                    primaryStage.getIcons().add(new Image(in));
+                }
+            }
         }
 
         primaryStage.setTitle("QuireBind");

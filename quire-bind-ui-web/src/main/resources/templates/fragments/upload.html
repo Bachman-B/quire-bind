@@ -42,6 +42,22 @@
                         <td class="col-name" th:text="${src.filename}">document.pdf</td>
                         <td class="col-pages" th:text="${src.pageCount}">0</td>
                         <td class="col-action">
+                            <form th:if="${not iter.first}"
+                                  hx-post="/wizard/upload/move-up"
+                                  hx-vals='{"index": "__${iter.index}__"}'
+                                  hx-target="#wizard-content"
+                                  hx-swap="innerHTML"
+                                  style="display:inline">
+                                <button type="submit" class="btn btn-icon-small" title="Move up">↑</button>
+                            </form>
+                            <form th:if="${not iter.last}"
+                                  hx-post="/wizard/upload/move-down"
+                                  hx-vals='{"index": "__${iter.index}__"}'
+                                  hx-target="#wizard-content"
+                                  hx-swap="innerHTML"
+                                  style="display:inline">
+                                <button type="submit" class="btn btn-icon-small" title="Move down">↓</button>
+                            </form>
                             <form hx-post="/wizard/upload/remove"
                                   hx-vals='{"index": "__${iter.index}__"}'
                                   hx-target="#wizard-content"
