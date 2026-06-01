@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Converts an HTML file to PDF using iText 7 pdfHTML (HTML5 + CSS3).
@@ -71,8 +73,9 @@ public final class HtmlToPdfConverter {
         Objects.requireNonNull(html, "html");
         Objects.requireNonNull(paperSize, "paperSize");
 
-        // Inject a @page rule if none is present so the paper size is respected
-        String htmlWithPage = injectPageSize(html, paperSize);
+        // Pre-process: strip non-renderable elements and inject layout fixes
+        String cleaned = preprocess(html);
+        String htmlWithPage = injectPageSize(cleaned, paperSize);
 
         Path out = Files.createTempFile("quire-convert-", ".pdf");
         try (PdfWriter writer = new PdfWriter(out.toFile());
@@ -92,16 +95,58 @@ public final class HtmlToPdfConverter {
         return out;
     }
 
+    /**
+     * Strips elements and rules that iText 7 cannot render:
+     * script blocks, canvas elements, and CDN font @import rules.
+     */
+    private static String preprocess(String html) {
+        // Remove <script>...</script>
+        html = html.replaceAll("(?si)<script[^>]*>.*?</script>", "");
+        // Remove <canvas> elements
+        html = html.replaceAll("(?si)<canvas[^>]*>.*?</canvas>", "");
+        html = html.replaceAll("(?i)<canvas[^>]*/?>", "");
+        // Remove CDN @import rules (fonts can't be fetched at conversion time)
+        html = html.replaceAll("@import\\s+url\\([^)]+\\)[^;]*;?", "");
+        return html;
+    }
+
+    /**
+     * Detects the largest fixed-size CSS container (e.g. a full-page cover div)
+     * and uses its dimensions as the PDF page size. Falls back to the requested
+     * paper size when no fixed container is detected.
+     */
     private static String injectPageSize(String html, PaperSize paperSize) {
-        float[] dims = pageDimsMm(paperSize);
-        // Inject a normalisation block: zero body margin/padding, proper page size.
-        // If the HTML already has an @page rule we still inject ours first so it
-        // acts as a fallback; the author's rule wins via CSS cascade.
-        String inject = "<style>"
-            + "html,body{margin:0!important;padding:0!important;"
-            + "min-height:0!important;}"
-            + "@page{size:" + dims[0] + "mm " + dims[1] + "mm;margin:10mm;}"
-            + "</style>";
+        // Look for width:Xpx / height:Ypx patterns in the CSS to detect a full-page container
+        Pattern dim = Pattern.compile("width\\s*:\\s*(\\d+)px[^}]*?height\\s*:\\s*(\\d+)px",
+            Pattern.DOTALL);
+        Matcher m = dim.matcher(html);
+        float pageMm0 = 0;
+        float pageMm1 = 0;
+        int maxArea = 0;
+        while (m.find()) {
+            int pw = Integer.parseInt(m.group(1));
+            int ph = Integer.parseInt(m.group(2));
+            int area = pw * ph;
+            // Only consider containers that look like full pages (> 400×400 px)
+            if (area > maxArea && pw > 400 && ph > 400) {
+                maxArea = area;
+                pageMm0 = pw / 96f * 25.4f;   // px → mm at 96 DPI
+                pageMm1 = ph / 96f * 25.4f;
+            }
+        }
+
+        String pageRule;
+        String bodyRule = "html,body{margin:0!important;padding:0!important;"
+            + "display:block!important;min-height:0!important;}";
+        if (pageMm0 > 0) {
+            // Use the detected container size with zero margin so content fits exactly
+            pageRule = String.format("@page{size:%.1fmm %.1fmm;margin:0;}", pageMm0, pageMm1);
+        } else {
+            float[] dims = pageDimsMm(paperSize);
+            pageRule = String.format("@page{size:%.1fmm %.1fmm;margin:10mm;}", dims[0], dims[1]);
+        }
+
+        String inject = "<style>" + bodyRule + pageRule + "</style>";
         int head = html.indexOf("</head>");
         if (head >= 0) {
             return html.substring(0, head) + inject + html.substring(head);
