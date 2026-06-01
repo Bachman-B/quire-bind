@@ -31,6 +31,16 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p /tmp/gh-pages/reports
+          # Root redirect — forwards the bare site URL to /reports/
+          cat > /tmp/gh-pages/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html><head>
+          <meta http-equiv="refresh" content="0; url=reports/">
+          <title>QuireBind Reports</title>
+          </head><body>
+          <p>Redirecting to <a href="reports/">reports</a>…</p>
+          </body></html>
+          EOF
           # Root aggregate site (index + module links)
           cp -r target/site/. /tmp/gh-pages/reports/
           # Per-module JaCoCo + Surefire reports
