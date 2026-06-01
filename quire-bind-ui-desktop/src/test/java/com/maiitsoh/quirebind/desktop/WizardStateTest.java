@@ -140,6 +140,80 @@ class WizardStateTest {
     }
 
     @Test
+    void getSourceDocPathsMapsPathStrings() {
+        WizardState state = new WizardState();
+        Path p1 = Path.of("/tmp/a.pdf");
+        Path p2 = Path.of("/tmp/b.pdf");
+        state.addInputPdf(p1);
+        state.addInputPdf(p2);
+        var map = state.getSourceDocPaths();
+        assertEquals(2, map.size());
+        assertEquals(p1, map.get(p1.toString()));
+        assertEquals(p2, map.get(p2.toString()));
+    }
+
+    @Test
+    void getSourceDocPathsEmptyWhenNoPdfs() {
+        WizardState state = new WizardState();
+        assertTrue(state.getSourceDocPaths().isEmpty());
+    }
+
+    @Test
+    void putAndGetSourceDisplayName() {
+        WizardState state = new WizardState();
+        Path p = Path.of("/tmp/quire-convert-12345.pdf");
+        state.addInputPdf(p);
+        state.putSourceDisplayName(p.toString(), "cover.html");
+        assertEquals("cover.html", state.getSourceDisplayName(p.toString()));
+    }
+
+    @Test
+    void getSourceDisplayNameFallsBackToFilename() {
+        WizardState state = new WizardState();
+        Path p = Path.of("/tmp/quire-convert-99999.pdf");
+        assertEquals("quire-convert-99999.pdf", state.getSourceDisplayName(p.toString()));
+    }
+
+    @Test
+    void getSourceDisplayNameNullReturnsEmpty() {
+        WizardState state = new WizardState();
+        assertEquals("", state.getSourceDisplayName(null));
+    }
+
+    @Test
+    void sourceDisplayNamesClearedOnReset() {
+        WizardState state = new WizardState();
+        Path p = Path.of("/tmp/a.pdf");
+        state.addInputPdf(p);
+        state.putSourceDisplayName(p.toString(), "cover.html");
+        state.reset();
+        // After reset the registered name is gone; fallback returns the filename from the path
+        assertEquals("a.pdf", state.getSourceDisplayName(p.toString()));
+    }
+
+    @Test
+    void applyCreepDefaultsFalse() {
+        assertFalse(new WizardState().isApplyCreep());
+    }
+
+    @Test
+    void applyCreepRoundTrip() {
+        WizardState state = new WizardState();
+        state.setApplyCreep(true);
+        assertTrue(state.isApplyCreep());
+        state.setApplyCreep(false);
+        assertFalse(state.isApplyCreep());
+    }
+
+    @Test
+    void applyCreepClearedOnReset() {
+        WizardState state = new WizardState();
+        state.setApplyCreep(true);
+        state.reset();
+        assertFalse(state.isApplyCreep());
+    }
+
+    @Test
     void settersRoundTrip() {
         WizardState state = new WizardState();
         Path path = Path.of("/tmp/test.pdf");

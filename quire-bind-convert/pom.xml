@@ -15,6 +15,50 @@
     <name>QuireBind Convert</name>
     <description>HTML and Markdown to PDF conversion pipeline</description>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <!-- IOException/Exception catch blocks in the converters cannot be
+                                 triggered without Mockito — excluded from 100% requirement.
+                                 See TEST_STRATEGY.md. -->
+                            <excludes>
+                                <exclude>com/maiitsoh/quirebind/convert/HtmlToPdfConverter.class</exclude>
+                                <exclude>com/maiitsoh/quirebind/convert/MarkdownToPdfConverter.class</exclude>
+                            </excludes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>com.maiitsoh.quirebind</groupId>

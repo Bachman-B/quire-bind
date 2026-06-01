@@ -141,6 +141,46 @@ class WebSessionTest {
     }
 
     @Test
+    void getSourceDocPathsMapsPathStrings() {
+        WebSession s = session();
+        Path p1 = Path.of("/tmp/a.pdf");
+        Path p2 = Path.of("/tmp/b.pdf");
+        s.addSource(p1, "a.pdf", 1);
+        s.addSource(p2, "b.pdf", 2);
+        var map = s.getSourceDocPaths();
+        assertEquals(2, map.size());
+        assertEquals(p1, map.get(p1.toString()));
+        assertEquals(p2, map.get(p2.toString()));
+    }
+
+    @Test
+    void getSourceDocPathsEmptyWhenNoSources() {
+        assertTrue(session().getSourceDocPaths().isEmpty());
+    }
+
+    @Test
+    void paperThicknessRoundTrip() {
+        WebSession s = session();
+        assertEquals(0.0, s.getPaperThicknessMm());
+        s.setPaperThicknessMm(0.1);
+        assertEquals(0.1, s.getPaperThicknessMm(), 0.001);
+    }
+
+    @Test
+    void applyCreepDefaultsFalse() {
+        assertFalse(session().isApplyCreep());
+    }
+
+    @Test
+    void applyCreepRoundTrip() {
+        WebSession s = session();
+        s.setApplyCreep(true);
+        assertTrue(s.isApplyCreep());
+        s.setApplyCreep(false);
+        assertFalse(s.isApplyCreep());
+    }
+
+    @Test
     void clearSourcesRemovesAll() {
         WebSession s = session();
         add(s, "a.pdf");
