@@ -1790,11 +1790,11 @@ public final class MainController implements Initializable {
         state.setPaperThicknessMm(parseThickness());
         boolean hasThickness = state.getPaperThicknessMm() > 0;
         applyCreepCheck.setDisable(!hasThickness);
-        if (!hasThickness) {
-            applyCreepCheck.setSelected(false);
-        }
+        // Auto-check when thickness is set; auto-uncheck when cleared
+        applyCreepCheck.setSelected(hasThickness);
         creepInfoLabel.setText(hasThickness
-            ? String.format("%.4g mm → max creep calculated on export", state.getPaperThicknessMm())
+            ? String.format("%.4g mm — compensation will be applied on export",
+                state.getPaperThicknessMm())
             : "Enter paper thickness in Step 2 to enable");
     }
 
