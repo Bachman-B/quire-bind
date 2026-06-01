@@ -1,35 +1,56 @@
-# Quire
+# QuireBind
 
-**Quire** is a free, open-source desktop and web application for preparing PDF files for
-hand bookbinding. It guides you from a raw PDF through page preparation, imposition layout,
-and print-ready output — covering all major binding techniques.
+**QuireBind** is a free, open-source desktop and web application for preparing documents
+for hand bookbinding. It guides you from raw source files through page preparation,
+imposition layout, and print-ready output — covering all major binding techniques.
 
 The name comes from the craft: a *quire* is a set of folded sheets nested together to form
 one signature — the fundamental unit of a hand-bound book.
 
 ---
 
-## Features (Phase 1)
+## Features
 
-- Select from nine binding techniques with visual schematic guidance
+**Source files**
+- Load PDF, HTML, HTM, Markdown (`.md` / `.markdown`) files as source material
+- Combine multiple source files into one binding job — added in the order you choose,
+  with ↑/↓ buttons and drag-and-drop reordering
+
+**Binding structure**
+- Nine binding techniques with visual schematic guidance:
+  saddle stitch, pamphlet, booklet, sewn signatures, hardcover, perfect binding,
+  Coptic, spiral, Japanese stab
 - Left-to-right and right-to-left binding support
-- Add, remove, and reorder pages before imposition
+- Three imposition groups: flat (A), single-signature folded (B), multi-signature folded (C)
+
+**Page preparation**
+- Add, remove, and reorder pages before imposition — ↑/↓ buttons and drag-and-drop
 - Automatic signature completion padding with configurable front/rear split
 - Aesthetic endpaper pages at front and rear
 - Page numbering with Roman front matter and Arabic body zones
-- PDF imposition: folio layout (quarto and octavo planned for a later release)
-- Live print preview of imposed sheets
-- Fold line and signature proof marker overlays
+- Front matter, body, and rear matter zones
+
+**Imposition and output**
+- Perfect Binding: pages output in reading order, full-size portrait (1-up)
+- Folded bindings: folio imposition (2-up landscape sheets for saddle stitch, sewn, etc.)
+- Creep compensation — enter paper thickness to calculate and apply the per-sheet content
+  shift that keeps margins consistent after trimming
+- Fold line, stitch mark, sewing hole, and trim line overlays
+- Configurable sewing hole patterns (simple and banded)
+
+**Other**
+- Live imposition summary with signature/page counts
 - Step-by-step in-app binding guides per technique
 - Batch processing via `.quire` configuration files
 - Native installers for Windows, macOS, and Linux (no Java install required)
+- AUR package for Arch Linux (`packaging/aur/PKGBUILD`)
 
 ---
 
 ## Getting started
 
 Download the installer for your platform from the
-[Releases](https://github.com/Bachman-B/quire/releases) page.
+[Releases](https://github.com/Bachman-B/quire-bind/releases) page.
 
 No Java installation is required — the JRE is bundled in the installer.
 
@@ -40,8 +61,8 @@ No Java installation is required — the JRE is bundled in the installer.
 Requirements: Java 21 LTS, Maven 3.9+
 
 ```bash
-git clone https://github.com/Bachman-B/quire.git
-cd quire
+git clone https://github.com/Bachman-B/quire-bind.git
+cd quire-bind
 mvn verify
 ```
 
