@@ -19,6 +19,7 @@
 package com.maiitsoh.quirebind.core.imposition;
 
 import com.maiitsoh.quirebind.core.model.BindingTechnique;
+import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
@@ -139,6 +140,28 @@ class ImpositionEngineTest {
                 .build();
         List<Signature> sigs = ImpositionEngine.impose(project);
         assertEquals(2, sigs.size());
+    }
+
+    @Test
+    void groupAOneContentPageProducesOneSheetWithFillers() {
+        // 1 content page is padded to 4 (multiple-of-4 rule for Group A FOLIO layout)
+        // → 1 signature, 1 sheet, 2 output PDF pages (front + back of the landscape sheet)
+        // The 3 filler blanks fill the remaining positions on the sheet.
+        QuireProject project = projectBase()
+                .bindingTechnique(BindingTechnique.PERFECT_BINDING)
+                .pageSequence(seqOf(1))
+                .build();
+        List<Signature> sigs = ImpositionEngine.impose(project);
+        assertEquals(1, sigs.size());
+        assertEquals(1, sigs.get(0).getSheets().size());
+        // FOLIO ordering: front=[pages[3], pages[0]], back=[pages[1], pages[2]]
+        // pages = [content, filler, filler, filler] so:
+        // front=[filler, content], back=[filler, filler]
+        ImposedSheet sheet = sigs.get(0).getSheets().get(0);
+        assertEquals(PageType.FILLER_BLANK, sheet.getFrontPages().get(0).getPageType());
+        assertEquals(PageType.CONTENT,      sheet.getFrontPages().get(1).getPageType());
+        assertEquals(PageType.FILLER_BLANK, sheet.getBackPages().get(0).getPageType());
+        assertEquals(PageType.FILLER_BLANK, sheet.getBackPages().get(1).getPageType());
     }
 
     @Test

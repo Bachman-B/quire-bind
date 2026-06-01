@@ -111,15 +111,24 @@ public final class HtmlToPdfConverter {
     }
 
     /**
-     * Detects the largest fixed-size CSS container (e.g. a full-page cover div)
-     * and uses its dimensions as the PDF page size. Falls back to the requested
-     * paper size when no fixed container is detected.
+     * Detects the largest fixed-size CSS container in {@code <style>} blocks only
+     * (e.g. a full-page cover div) and uses its dimensions as the PDF page size.
+     * Falls back to the requested paper size when no fixed container is detected.
+     * Searching only inside {@code <style>} tags prevents body content (such as
+     * code blocks with CSS examples) from triggering a false detection.
      */
     private static String injectPageSize(String html, PaperSize paperSize) {
-        // Look for width:Xpx / height:Ypx patterns in the CSS to detect a full-page container
+        // Extract only CSS inside <style> tags to avoid matching body content
+        StringBuilder cssOnly = new StringBuilder();
+        Pattern styleTag = Pattern.compile("(?si)<style[^>]*>(.*?)</style>");
+        Matcher styleM = styleTag.matcher(html);
+        while (styleM.find()) {
+            cssOnly.append(styleM.group(1)).append('\n');
+        }
+
         Pattern dim = Pattern.compile("width\\s*:\\s*(\\d+)px[^}]*?height\\s*:\\s*(\\d+)px",
             Pattern.DOTALL);
-        Matcher m = dim.matcher(html);
+        Matcher m = dim.matcher(cssOnly);
         float pageMm0 = 0;
         float pageMm1 = 0;
         int maxArea = 0;

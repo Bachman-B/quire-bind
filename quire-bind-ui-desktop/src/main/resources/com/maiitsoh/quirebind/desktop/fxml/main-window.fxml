@@ -413,6 +413,11 @@
                                     styleClass="action-button" maxWidth="Infinity"/>
                             <Label fx:id="exportResultLabel" styleClass="success-label"
                                    wrapText="true"/>
+                            <Region VBox.vgrow="ALWAYS"/>
+                            <Separator/>
+                            <Button text="↺ New Project"
+                                    onAction="#handleMenuNewProject"
+                                    styleClass="action-button" maxWidth="Infinity"/>
                         </VBox>
 
                         <!-- Vertical divider -->
