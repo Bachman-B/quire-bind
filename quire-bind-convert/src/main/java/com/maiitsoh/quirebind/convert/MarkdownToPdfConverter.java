@@ -94,6 +94,8 @@ public final class MarkdownToPdfConverter {
             + "  ul, ol { margin: 0 0 8pt 20pt; }\n"
             + "  blockquote { margin: 8pt 0 8pt 20pt; border-left: 3pt solid #ccc;"
             + "               padding-left: 8pt; color: #555; }\n"
+            + "  svg, img, figure { max-width: 100%; width: auto; height: auto;"
+            + "                     display: block; margin: 8pt 0; }\n"
             + "</style>\n</head>\n<body>\n"
             + body + "\n</body>\n</html>";
     }

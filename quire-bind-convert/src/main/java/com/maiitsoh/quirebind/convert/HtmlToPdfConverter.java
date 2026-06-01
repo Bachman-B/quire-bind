@@ -107,6 +107,12 @@ public final class HtmlToPdfConverter {
         html = html.replaceAll("(?i)<canvas[^>]*/?>", "");
         // Remove CDN @import rules (fonts can't be fetched at conversion time)
         html = html.replaceAll("@import\\s+url\\([^)]+\\)[^;]*;?", "");
+        // Wrap every SVG in a block div so iText 7 treats it as a block element,
+        // and add explicit dimensions so it scales to page width rather than
+        // expanding the page to its natural viewBox size.
+        html = html.replaceAll("(?i)(<svg)\\b",
+            "<div style=\"width:100%;overflow:hidden;\"><svg style=\"width:100%;height:auto;\"");
+        html = html.replaceAll("(?i)(</svg>)", "$1</div>");
         return html;
     }
 
@@ -146,7 +152,10 @@ public final class HtmlToPdfConverter {
 
         String pageRule;
         String bodyRule = "html,body{margin:0!important;padding:0!important;"
-            + "display:block!important;min-height:0!important;}";
+            + "display:block!important;min-height:0!important;}"
+            // Constrain media so they never overflow the page and break pagination
+            + "svg,img,figure{max-width:100%!important;width:auto!important;"
+            + "height:auto!important;display:block;}";
         if (pageMm0 > 0) {
             // Use the detected container size with zero margin so content fits exactly
             pageRule = String.format("@page{size:%.1fmm %.1fmm;margin:0;}", pageMm0, pageMm1);
