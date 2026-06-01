@@ -190,7 +190,7 @@ public final class PdfImpositionWriter {
             try {
                 doc.close();
             } catch (IOException ignored) {
-                // best-effort
+                // COVERAGE-EXCLUDE: PDFBox PDDocument.close() does not throw in practice
             }
         }
     }

@@ -28,10 +28,22 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
+- (nothing yet)
+
+---
+
+## [1.1.0] — 2026-06-01
+
+### Added
 - **Multi-PDF binding** — load multiple PDF files as source material for a single binding
   job. Files are combined in the order they are added; the page sequence editor and all
   downstream steps (imposition, export) work transparently across sources. Available in
   both the desktop and web interfaces.
+
+### Fixed
+- Page sequence editor now shows the source filename and page number within that file
+  (e.g. `cover.pdf p.1`) instead of the generic label "Content", making it clear which
+  source each page originated from.
 
 ---
 
