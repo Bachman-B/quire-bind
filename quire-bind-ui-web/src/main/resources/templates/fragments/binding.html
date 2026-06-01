@@ -72,6 +72,15 @@
                            th:value="${ws.signatureSize}" class="input-narrow"/>
                     <p class="field-hint">Ignored for single-signature techniques (Group B).</p>
                 </div>
+
+                <div class="field-group">
+                    <label for="paperThickness" class="field-label">Paper thickness (mm)</label>
+                    <input id="paperThickness" type="number" name="paperThicknessMm"
+                           min="0" step="0.01"
+                           th:value="${ws.paperThicknessMm > 0 ? ws.paperThicknessMm : ''}"
+                           placeholder="e.g. 0.10" class="input-narrow"/>
+                    <p class="field-hint">Used for creep compensation on export. Leave blank to skip.</p>
+                </div>
             </div>
 
             <div class="step-actions">

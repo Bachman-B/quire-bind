@@ -21,6 +21,7 @@ package com.maiitsoh.quirebind.core.pdf;
 import com.maiitsoh.quirebind.core.imposition.ImpositionEngine;
 import com.maiitsoh.quirebind.core.model.BindingTechnique;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
+import java.util.Map;
 import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
@@ -463,6 +464,50 @@ class PdfImpositionWriterTest {
         Path out = tempDir.resolve("out.pdf");
         List<Signature> sigs = imposeFourContentPages(src);
         PdfImpositionWriter.write(sigs, src, out, PaperSize.A4, null, null);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithCreepCompensationProducesValidPdf() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out-creep.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        CreepConfig creepConfig = CreepConfig.builder()
+                .paperThicknessMm(0.1)
+                .applyToOutput(true)
+                .build();
+        PdfImpositionWriter.write(
+                sigs,
+                Map.of(src.toString(), src),
+                out,
+                PaperSize.A4,
+                MarkConfig.builder().build(),
+                null,
+                creepConfig);
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            assertEquals(2, doc.getNumberOfPages());
+        }
+    }
+
+    @Test
+    void writesWithCreepDisabledWhenApplyToOutputFalse() throws IOException {
+        Path src = createSourcePdf(4);
+        Path out = tempDir.resolve("out-creep-disabled.pdf");
+        List<Signature> sigs = imposeFourContentPages(src);
+        CreepConfig creepConfig = CreepConfig.builder()
+                .paperThicknessMm(0.1)
+                .applyToOutput(false) // should not apply
+                .build();
+        PdfImpositionWriter.write(
+                sigs,
+                Map.of(src.toString(), src),
+                out,
+                PaperSize.A4,
+                MarkConfig.builder().build(),
+                null,
+                creepConfig);
         try (PDDocument doc = Loader.loadPDF(out.toFile())) {
             assertEquals(2, doc.getNumberOfPages());
         }

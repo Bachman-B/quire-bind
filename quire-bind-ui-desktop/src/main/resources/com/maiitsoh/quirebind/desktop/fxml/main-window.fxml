@@ -341,6 +341,11 @@
                                 </VBox>
                             </VBox>
                             <CheckBox fx:id="trimLinesCheck" text="Trim lines"/>
+                            <Separator/>
+                            <CheckBox fx:id="applyCreepCheck" text="Apply creep compensation"
+                                      disable="true"/>
+                            <Label fx:id="creepInfoLabel" styleClass="info-label"
+                                   wrapText="true" maxWidth="160"/>
                         </VBox>
 
                         <!-- Vertical divider -->

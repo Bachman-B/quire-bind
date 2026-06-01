@@ -94,6 +94,17 @@
                     <input type="checkbox" form="export-form" name="trimLines"
                            th:checked="${ws.trimLines}"/> Trim lines
                 </label>
+
+                <div th:if="${ws.paperThicknessMm > 0}" class="creep-section">
+                    <hr class="creep-divider"/>
+                    <label class="checkbox-label">
+                        <input type="checkbox" form="export-form" name="applyCreep"
+                               th:checked="${ws.applyCreep}"/>
+                        Apply creep compensation
+                    </label>
+                    <p class="field-hint creep-hint"
+                       th:text="'Paper thickness: ' + ${ws.paperThicknessMm} + ' mm'"></p>
+                </div>
             </section>
 
             <!-- Middle: Page Numbering -->

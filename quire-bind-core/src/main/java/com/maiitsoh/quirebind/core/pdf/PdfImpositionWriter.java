@@ -18,6 +18,8 @@
  */
 package com.maiitsoh.quirebind.core.pdf;
 
+import com.maiitsoh.quirebind.core.creep.CreepTransformApplier;
+import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.model.FolioPosition;
 import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
@@ -93,7 +95,7 @@ public final class PdfImpositionWriter {
 
     /**
      * Writes the imposed output PDF with optional marks and folios.
-     * Delegates to {@link #write(List, Map, Path, PaperSize, MarkConfig, NumberingConfig)}.
+     * Delegates to {@link #write(List, Map, Path, PaperSize, MarkConfig, NumberingConfig, CreepConfig)}.
      *
      * @param signatures       composed signatures; must not be null
      * @param sourcePdfPath    path to the source PDF, or {@code null} if all pages are blank
@@ -114,15 +116,12 @@ public final class PdfImpositionWriter {
         Map<String, Path> docs = sourcePdfPath != null
                 ? Map.of(sourcePdfPath.toString(), sourcePdfPath)
                 : Map.of();
-        write(signatures, docs, outputPath, paperSize, markConfig, numberingConfig);
+        write(signatures, docs, outputPath, paperSize, markConfig, numberingConfig, null);
     }
 
     /**
-     * Writes the imposed output PDF sourcing pages from multiple source documents.
-     *
-     * <p>Each page in the sequence carries a {@code sourceDocumentId} that must match a key
-     * in {@code sourceDocPaths}. Pages whose document ID is absent or unmapped produce a
-     * blank half on the output sheet.
+     * Writes the imposed output PDF sourcing pages from multiple source documents,
+     * without creep compensation.
      *
      * @param signatures       composed signatures; must not be null
      * @param sourceDocPaths   map from document ID to file path; may be null or empty
@@ -140,6 +139,36 @@ public final class PdfImpositionWriter {
             PaperSize paperSize,
             MarkConfig markConfig,
             NumberingConfig numberingConfig) throws IOException {
+        write(signatures, sourceDocPaths, outputPath, paperSize, markConfig, numberingConfig, null);
+    }
+
+    /**
+     * Writes the imposed output PDF sourcing pages from multiple source documents,
+     * with optional creep compensation.
+     *
+     * <p>When {@code creepConfig} is non-null and {@link CreepConfig#isApplyToOutput()} is
+     * true, page content on each sheet is shifted inward toward the fold line by the
+     * per-sheet creep amount, compensating for the outward protrusion of inner sheets.
+     *
+     * @param signatures       composed signatures; must not be null
+     * @param sourceDocPaths   map from document ID to file path; may be null or empty
+     * @param outputPath       destination path; must not be null
+     * @param paperSize        book page size; must not be null; {@code CUSTOM} is unsupported
+     * @param markConfig       controls which output marks are rendered; null disables all marks
+     * @param numberingConfig  controls folio rendering; null disables folio output
+     * @param creepConfig      creep compensation settings; null or {@code applyToOutput=false}
+     *                         disables compensation
+     * @throws IOException                   if any file operation fails
+     * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
+     */
+    public static void write(
+            List<Signature> signatures,
+            Map<String, Path> sourceDocPaths,
+            Path outputPath,
+            PaperSize paperSize,
+            MarkConfig markConfig,
+            NumberingConfig numberingConfig,
+            CreepConfig creepConfig) throws IOException {
         Objects.requireNonNull(signatures, "signatures");
         Objects.requireNonNull(outputPath, "outputPath");
         Objects.requireNonNull(paperSize, "paperSize");
@@ -160,11 +189,11 @@ public final class PdfImpositionWriter {
                         addSheetPage(outDoc, layers, openDocs, sheetRect, bookRect,
                                 sheet.getFrontPages(), marks, numberingConfig, font,
                                 sheet.getSheetIndex(), sheetsInSig,
-                                sig.getSignatureIndex(), totalSigs);
+                                sig.getSignatureIndex(), totalSigs, creepConfig);
                         addSheetPage(outDoc, layers, openDocs, sheetRect, bookRect,
                                 sheet.getBackPages(), marks, numberingConfig, font,
                                 sheet.getSheetIndex(), sheetsInSig,
-                                sig.getSignatureIndex(), totalSigs);
+                                sig.getSignatureIndex(), totalSigs, creepConfig);
                     }
                 }
                 outDoc.save(outputPath.toFile());
@@ -208,14 +237,18 @@ public final class PdfImpositionWriter {
             int sheetIndex,
             int sheetsInSig,
             int sigIndex,
-            int totalSigs) throws IOException {
+            int totalSigs,
+            CreepConfig creepConfig) throws IOException {
         PDPage outPage = new PDPage(sheetRect);
         outDoc.addPage(outPage);
         float halfW = bookRect.getWidth();
         float halfH = bookRect.getHeight();
+        float creepShiftPt = (creepConfig != null && creepConfig.isApplyToOutput())
+                ? CreepTransformApplier.shiftPt(sheetIndex, creepConfig)
+                : 0f;
         try (PDPageContentStream cs = new PDPageContentStream(outDoc, outPage)) {
-            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(0), 0f, halfW, halfH);
-            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(1), halfW, halfW, halfH);
+            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(0), 0f, halfW, halfH, creepShiftPt);
+            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(1), halfW, halfW, halfH, creepShiftPt);
             if (marks.isFoldLines()) {
                 renderFoldLine(cs, halfW, halfH);
             }
@@ -245,7 +278,8 @@ public final class PdfImpositionWriter {
             QuirePage page,
             float xOffset,
             float halfW,
-            float halfH) throws IOException {
+            float halfH,
+            float creepShiftPt) throws IOException {
         if (page.getPageType() != PageType.CONTENT) {
             return;
         }
@@ -261,7 +295,9 @@ public final class PdfImpositionWriter {
         PDFormXObject form = layers.importPageAsForm(srcDoc, srcIdx);
         PDRectangle srcBox = srcDoc.getPage(srcIdx).getMediaBox();
         float scale = Math.min(halfW / srcBox.getWidth(), halfH / srcBox.getHeight());
-        float tx = xOffset + (halfW - srcBox.getWidth() * scale) / 2f;
+        // Shift left-half pages toward the fold (right), right-half pages toward the fold (left)
+        float creepOffset = xOffset < halfW ? creepShiftPt : -creepShiftPt;
+        float tx = xOffset + (halfW - srcBox.getWidth() * scale) / 2f + creepOffset;
         float ty = (halfH - srcBox.getHeight() * scale) / 2f;
         cs.saveGraphicsState();
         cs.transform(new Matrix(scale, 0, 0, scale, tx, ty));

@@ -28,7 +28,11 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
-- (nothing yet)
+- **Creep compensation** — when a paper thickness is entered in the binding step,
+  an "Apply creep compensation" option becomes available on the export step.
+  When enabled, each sheet's content is shifted inward toward the fold line by the
+  calculated creep amount, so after trimming all pages have consistent margins.
+  Available in both the web wizard and the desktop app.
 
 ---
 

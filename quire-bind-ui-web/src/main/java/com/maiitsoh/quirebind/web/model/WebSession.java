@@ -54,6 +54,8 @@ public class WebSession {
     private PaperSize paperSize = PaperSize.A4;
     private ReadingDirection readingDirection = ReadingDirection.LTR;
     private int signatureSize = 4;
+    private double paperThicknessMm = 0.0;
+    private boolean applyCreep = false;
 
     private int frontMatterPageCount = 0;
     private int rearMatterPageCount = 0;
@@ -221,6 +223,26 @@ public class WebSession {
     /** Sets the signature size. */
     public void setSignatureSize(int signatureSize) {
         this.signatureSize = signatureSize;
+    }
+
+    /** Returns the paper thickness in mm, or 0 if not set. */
+    public double getPaperThicknessMm() {
+        return paperThicknessMm;
+    }
+
+    /** Sets the paper thickness in mm. */
+    public void setPaperThicknessMm(double paperThicknessMm) {
+        this.paperThicknessMm = paperThicknessMm;
+    }
+
+    /** Returns whether creep compensation should be applied on export. */
+    public boolean isApplyCreep() {
+        return applyCreep;
+    }
+
+    /** Sets whether creep compensation should be applied on export. */
+    public void setApplyCreep(boolean applyCreep) {
+        this.applyCreep = applyCreep;
     }
 
     /** Returns the number of front-matter pages. */

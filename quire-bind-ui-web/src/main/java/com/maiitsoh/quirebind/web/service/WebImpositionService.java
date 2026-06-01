@@ -19,6 +19,8 @@
 package com.maiitsoh.quirebind.web.service;
 
 import com.maiitsoh.quirebind.core.binding.BindingGroupMapper;
+import com.maiitsoh.quirebind.core.creep.CreepCalculator;
+import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.imposition.FolioAssigner;
 import com.maiitsoh.quirebind.core.imposition.PagePaddingApplier;
 import com.maiitsoh.quirebind.core.imposition.SignatureComposer;
@@ -108,13 +110,22 @@ public class WebImpositionService {
                 .trimLines(session.isTrimLines())
                 .build();
             NumberingConfig numberingConfig = buildNumberingConfig(session);
+            CreepConfig creepConfig = null;
+            if (session.isApplyCreep() && session.getPaperThicknessMm() > 0) {
+                CreepConfig base = CreepConfig.builder()
+                    .paperThicknessMm(session.getPaperThicknessMm())
+                    .applyToOutput(true)
+                    .build();
+                creepConfig = CreepCalculator.calculate(session.getImpositionResult(), base);
+            }
             PdfImpositionWriter.write(
                 session.getImpositionResult(),
                 session.getSourceDocPaths(),
                 tempOut,
                 session.getPaperSize(),
                 markConfig,
-                numberingConfig);
+                numberingConfig,
+                creepConfig);
             Files.copy(tempOut, outputStream);
         } finally {
             Files.deleteIfExists(tempOut);

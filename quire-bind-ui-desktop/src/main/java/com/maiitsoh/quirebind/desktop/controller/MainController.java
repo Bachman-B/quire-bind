@@ -21,6 +21,8 @@ package com.maiitsoh.quirebind.desktop.controller;
 import com.maiitsoh.quirebind.batch.parser.QuireFileParser;
 import com.maiitsoh.quirebind.batch.runner.BatchTemplateRunner;
 import com.maiitsoh.quirebind.core.binding.BindingGroupMapper;
+import com.maiitsoh.quirebind.core.creep.CreepCalculator;
+import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.imposition.FolioAssigner;
 import com.maiitsoh.quirebind.core.imposition.PagePaddingApplier;
 import com.maiitsoh.quirebind.core.imposition.SignatureComposer;
@@ -192,6 +194,8 @@ public final class MainController implements Initializable {
     @FXML private TextField sewingBandWidthField;
     @FXML private TextField sewingEndMarginField;
     @FXML private CheckBox trimLinesCheck;
+    @FXML private CheckBox applyCreepCheck;
+    @FXML private Label creepInfoLabel;
     @FXML private ComboBox<FolioStyle> bodyFolioStyleCombo;
     @FXML private ComboBox<FolioStyle> frontMatterFolioStyleCombo;
     @FXML private ComboBox<FolioStyle> rearMatterFolioStyleCombo;
@@ -429,6 +433,9 @@ public final class MainController implements Initializable {
         sewingBandWidthField.setText("10");
         sewingEndMarginField.setText("15");
         sewingHolesParams.setDisable(true);
+        applyCreepCheck.setSelected(false);
+        applyCreepCheck.setDisable(true);
+        creepInfoLabel.setText("");
         batchPdfListView.getItems().clear();
         batchSuffixField.setText("-imposed");
         batchOutputDirField.clear();
@@ -1617,13 +1624,22 @@ public final class MainController implements Initializable {
             .folioPosition(state.getFolioPosition())
             .build();
         try {
+            CreepConfig creepConfig = null;
+            if (applyCreepCheck.isSelected() && state.getPaperThicknessMm() > 0) {
+                CreepConfig base = CreepConfig.builder()
+                    .paperThicknessMm(state.getPaperThicknessMm())
+                    .applyToOutput(true)
+                    .build();
+                creepConfig = CreepCalculator.calculate(state.getImpositionResult(), base);
+            }
             PdfImpositionWriter.write(
                 state.getImpositionResult(),
                 state.getSourceDocPaths(),
                 state.getOutputPdf(),
                 state.getPaperSize(),
                 markConfig,
-                numberingConfig);
+                numberingConfig,
+                creepConfig);
             exportResultLabel.setText("Exported: " + state.getOutputPdf().getFileName());
             exportButton.setDisable(true);
             setStatus("Export complete.");
@@ -1758,6 +1774,14 @@ public final class MainController implements Initializable {
             state.setReadingDirection(directionCombo.getValue());
         }
         state.setPaperThicknessMm(parseThickness());
+        boolean hasThickness = state.getPaperThicknessMm() > 0;
+        applyCreepCheck.setDisable(!hasThickness);
+        if (!hasThickness) {
+            applyCreepCheck.setSelected(false);
+        }
+        creepInfoLabel.setText(hasThickness
+            ? String.format("Paper: %.2f mm", state.getPaperThicknessMm())
+            : "Enter paper thickness above to enable");
     }
 
     private void collectMarksState() {

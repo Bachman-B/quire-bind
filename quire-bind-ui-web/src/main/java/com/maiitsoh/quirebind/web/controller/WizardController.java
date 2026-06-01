@@ -197,12 +197,14 @@ public class WizardController {
             @RequestParam("paperSize") String paperSizeStr,
             @RequestParam("readingDirection") String dirStr,
             @RequestParam(value = "signatureSize", defaultValue = "4") int signatureSize,
+            @RequestParam(value = "paperThicknessMm", defaultValue = "0") double paperThicknessMm,
             @RequestHeader(value = "HX-Request", required = false) String htmx,
             Model model) {
         session.setTechnique(BindingTechnique.valueOf(techniqueStr));
         session.setPaperSize(PaperSize.valueOf(paperSizeStr));
         session.setReadingDirection(ReadingDirection.valueOf(dirStr));
         session.setSignatureSize(Math.max(1, signatureSize));
+        session.setPaperThicknessMm(paperThicknessMm > 0 ? paperThicknessMm : 0.0);
         session.setImpositionResult(null);
         addPagesModel(model);
         return htmx != null ? STEP_PAGES : "index";
@@ -270,7 +272,9 @@ public class WizardController {
             @RequestParam(value = "rearMatterStartNumber", defaultValue = "1") int rearStart,
             @RequestParam(value = "folioPosition", defaultValue = "BOTTOM_OUTER") String posStr,
             @RequestParam(value = "suppressFirstFolio", defaultValue = "false")
-                boolean suppressFirst) {
+                boolean suppressFirst,
+            @RequestParam(value = "applyCreep", defaultValue = "false") boolean applyCreep) {
+        session.setApplyCreep(applyCreep);
         session.setFoldLines(foldLines);
         session.setStitchMarks(stitchMarks);
         session.setSewingHoles(sewingHoles);

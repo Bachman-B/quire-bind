@@ -78,6 +78,7 @@ public final class WizardState {
     private double paperThicknessMm = 0.0;
 
     // Output marks
+    private boolean applyCreep = false;
     private boolean foldLines = false;
     private boolean stitchMarks = false;
     private boolean sewingHoles = false;
@@ -296,6 +297,16 @@ public final class WizardState {
     /** Sets the paper thickness in mm. */
     public void setPaperThicknessMm(double paperThicknessMm) {
         this.paperThicknessMm = paperThicknessMm;
+    }
+
+    /** Returns whether creep compensation should be applied on export. */
+    public boolean isApplyCreep() {
+        return applyCreep;
+    }
+
+    /** Sets whether creep compensation should be applied on export. */
+    public void setApplyCreep(boolean applyCreep) {
+        this.applyCreep = applyCreep;
     }
 
     /** Returns whether fold lines should be printed on the output. */
@@ -540,6 +551,7 @@ public final class WizardState {
         pagesPerSignature = 16;
         readingDirection = ReadingDirection.LTR;
         paperThicknessMm = 0.0;
+        applyCreep = false;
         foldLines = false;
         stitchMarks = false;
         sewingHoles = false;

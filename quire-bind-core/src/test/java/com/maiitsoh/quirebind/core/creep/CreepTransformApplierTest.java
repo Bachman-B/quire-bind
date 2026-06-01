@@ -18,7 +18,7 @@
  */
 package com.maiitsoh.quirebind.core.creep;
 
-import com.maiitsoh.quirebind.core.model.*;
+import com.maiitsoh.quirebind.core.model.CreepConfig;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
@@ -27,29 +27,56 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CreepTransformApplierTest {
 
-    private QuireProject minimalProject() {
-        return QuireProject.builder()
-                .name("Test")
-                .bindingTechnique(BindingTechnique.SADDLE_STITCH)
-                .paperSize(PaperSize.A4)
-                .readingDirection(ReadingDirection.LTR)
-                .layout(ImpositionLayout.FOLIO)
-                .pageSequence(new PageSequence())
-                .paddingConfig(PaddingConfig.builder().build())
-                .numberingConfig(NumberingConfig.builder().build())
-                .markConfig(MarkConfig.builder().build())
-                .creepConfig(CreepConfig.builder().build())
-                .build();
+    @Test
+    void outermostSheetHasZeroShift() {
+        assertEquals(0f, CreepTransformApplier.shiftPt(0, 0.1), 0.001f);
     }
 
     @Test
-    void applyTransformThrowsUnsupportedOperationException() {
-        assertThrows(UnsupportedOperationException.class,
-                () -> CreepTransformApplier.applyTransform(minimalProject()));
+    void shiftIncreasesWithSheetIndex() {
+        float shift1 = CreepTransformApplier.shiftPt(1, 0.1);
+        float shift2 = CreepTransformApplier.shiftPt(2, 0.1);
+        assertTrue(shift1 > 0f);
+        assertTrue(shift2 > shift1);
     }
 
     @Test
-    void constructorIsPrivateAndInvocable() throws Exception {
+    void shiftFormula() {
+        // sheetIndex=1, thickness=0.1 mm → shiftMm = 1×2×0.1 = 0.2 mm → pt = 0.2×72/25.4
+        float expected = (float) (0.2 * 72.0 / 25.4);
+        assertEquals(expected, CreepTransformApplier.shiftPt(1, 0.1), 0.001f);
+    }
+
+    @Test
+    void zeroThicknessGivesZeroShift() {
+        assertEquals(0f, CreepTransformApplier.shiftPt(5, 0.0), 0.001f);
+    }
+
+    @Test
+    void configOverloadUsesThickness() {
+        CreepConfig config = CreepConfig.builder().paperThicknessMm(0.1).build();
+        float direct = CreepTransformApplier.shiftPt(2, 0.1);
+        float fromConfig = CreepTransformApplier.shiftPt(2, config);
+        assertEquals(direct, fromConfig, 0.001f);
+    }
+
+    @Test
+    void configOverloadDerivesFromGsm() {
+        // 80 gsm × 0.00125 = 0.1 mm
+        CreepConfig config = CreepConfig.builder().paperWeightGsm(80.0).build();
+        float fromGsm = CreepTransformApplier.shiftPt(1, config);
+        float fromMm = CreepTransformApplier.shiftPt(1, 0.1);
+        assertEquals(fromMm, fromGsm, 0.001f);
+    }
+
+    @Test
+    void configOverloadReturnsZeroWhenNeitherSet() {
+        CreepConfig config = CreepConfig.builder().build();
+        assertEquals(0f, CreepTransformApplier.shiftPt(3, config), 0.001f);
+    }
+
+    @Test
+    void constructorIsPrivate() throws Exception {
         Constructor<CreepTransformApplier> ctor =
                 CreepTransformApplier.class.getDeclaredConstructor();
         assertNotNull(ctor);
