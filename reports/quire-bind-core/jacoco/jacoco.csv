@@ -1,7 +1,7 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 QuireBind Core,com.maiitsoh.quirebind.core.pdf,PdfPageLoader,0,70,0,4,0,20,0,4,0,2
-QuireBind Core,com.maiitsoh.quirebind.core.pdf,PdfImpositionWriter,2,978,2,65,1,203,2,49,0,15
-QuireBind Core,com.maiitsoh.quirebind.core.creep,CreepTransformApplier,0,5,0,0,0,1,0,1,0,1
+QuireBind Core,com.maiitsoh.quirebind.core.pdf,PdfImpositionWriter,11,1005,2,71,3,207,3,52,1,15
+QuireBind Core,com.maiitsoh.quirebind.core.creep,CreepTransformApplier,0,39,0,0,0,7,0,4,0,4
 QuireBind Core,com.maiitsoh.quirebind.core.creep,CreepCalculator,0,145,0,14,0,33,0,9,0,2
 QuireBind Core,com.maiitsoh.quirebind.core.imposition,ImpositionEngine,0,30,0,0,0,11,0,1,0,1
 QuireBind Core,com.maiitsoh.quirebind.core.imposition,FolioAssigner,0,200,0,46,0,48,0,25,0,2
