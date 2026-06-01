@@ -30,7 +30,9 @@ import com.maiitsoh.quirebind.core.model.Signature;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Mutable state shared across wizard steps within a single session. */
 public final class WizardState {
@@ -56,9 +58,8 @@ public final class WizardState {
     private WizardMode mode = WizardMode.SINGLE_PDF;
     private PaddingPosition paddingPosition = PaddingPosition.AFTER;
 
-    // Single PDF mode
-    private Path inputPdf;
-    private int pageCount;
+    // Single PDF mode — supports multiple source PDFs combined in order
+    private List<Path> inputPdfs = new ArrayList<>();
     private PageSequence pageSequence;
 
     // Batch mode
@@ -127,24 +128,41 @@ public final class WizardState {
         this.paddingPosition = paddingPosition;
     }
 
-    /** Returns the source PDF path, or {@code null} if none has been chosen. */
+    /** Returns the mutable list of source PDF paths in load order. */
+    public List<Path> getInputPdfs() {
+        return inputPdfs;
+    }
+
+    /** Appends a source PDF path. */
+    public void addInputPdf(Path path) {
+        inputPdfs.add(path);
+    }
+
+    /** Removes the source at the given index. No-op if the index is out of range. */
+    public void removeInputPdf(int index) {
+        if (index >= 0 && index < inputPdfs.size()) {
+            inputPdfs.remove(index);
+        }
+    }
+
+    /**
+     * Returns the first source PDF path, or {@code null} if none has been added.
+     * Retained for compatibility — prefer {@link #getInputPdfs()} for multi-source use.
+     */
     public Path getInputPdf() {
-        return inputPdf;
+        return inputPdfs.isEmpty() ? null : inputPdfs.get(0);
     }
 
-    /** Sets the source PDF path. */
-    public void setInputPdf(Path inputPdf) {
-        this.inputPdf = inputPdf;
-    }
-
-    /** Returns the number of pages loaded from the source PDF. */
-    public int getPageCount() {
-        return pageCount;
-    }
-
-    /** Sets the page count after loading the source PDF. */
-    public void setPageCount(int pageCount) {
-        this.pageCount = pageCount;
+    /**
+     * Returns a map from source document ID (path string) to path, suitable for passing
+     * to {@link com.maiitsoh.quirebind.core.pdf.PdfImpositionWriter}.
+     */
+    public Map<String, Path> getSourceDocPaths() {
+        Map<String, Path> map = new LinkedHashMap<>();
+        for (Path p : inputPdfs) {
+            map.put(p.toString(), p);
+        }
+        return map;
     }
 
     /** Returns the mutable page sequence, or {@code null} if not yet loaded. */
@@ -472,9 +490,9 @@ public final class WizardState {
         this.outputPdf = outputPdf;
     }
 
-    /** Returns {@code true} if a source PDF has been chosen. */
+    /** Returns {@code true} if at least one source PDF has been added. */
     public boolean hasInputPdf() {
-        return inputPdf != null;
+        return !inputPdfs.isEmpty();
     }
 
     /** Returns {@code true} if a .quire batch config has been loaded. */
@@ -491,8 +509,7 @@ public final class WizardState {
     public void reset() {
         mode = WizardMode.SINGLE_PDF;
         paddingPosition = PaddingPosition.AFTER;
-        inputPdf = null;
-        pageCount = 0;
+        inputPdfs = new ArrayList<>();
         pageSequence = null;
         batchConfigPath = null;
         batchConfig = null;

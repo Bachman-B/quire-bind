@@ -30,6 +30,7 @@ import com.maiitsoh.quirebind.core.model.QuirePage;
 import com.maiitsoh.quirebind.core.model.ReadingDirection;
 import com.maiitsoh.quirebind.core.model.SewingConfig;
 import com.maiitsoh.quirebind.core.pdf.PdfPageLoader;
+import org.apache.pdfbox.Loader;
 import com.maiitsoh.quirebind.guides.loader.GuideLoader;
 import com.maiitsoh.quirebind.guides.model.BindingGuide;
 import com.maiitsoh.quirebind.guides.renderer.MarkdownToHtml;
@@ -82,7 +83,7 @@ public class WizardController {
         return "index";
     }
 
-    /** Accepts a PDF upload and advances to the binding configuration step. */
+    /** Adds a PDF to the source list and re-renders the upload step. */
     @PostMapping("/wizard/upload")
     public String upload(
             @RequestParam("pdf") MultipartFile file,
@@ -96,12 +97,52 @@ public class WizardController {
         Path tmp = Files.createTempFile("quire-upload-", ".pdf");
         file.transferTo(tmp);
         String name = file.getOriginalFilename();
-        session.setSourcePdf(tmp);
-        session.setOriginalFilename(name != null ? name : "document.pdf");
-        session.setPageSequence(PdfPageLoader.load(tmp));
+        int count;
+        try (var doc = Loader.loadPDF(tmp.toFile())) {
+            count = doc.getNumberOfPages();
+        }
+        session.addSource(tmp, name != null ? name : "document.pdf", count);
+        session.setPageSequence(rebuildSequence());
         session.setImpositionResult(null);
+        addUploadModel(model);
+        return htmx != null ? STEP_UPLOAD : "index";
+    }
+
+    /** Removes a source PDF by index and re-renders the upload step. */
+    @PostMapping("/wizard/upload/remove")
+    public String removeSource(
+            @RequestParam("index") int index,
+            @RequestHeader(value = "HX-Request", required = false) String htmx,
+            Model model) throws IOException {
+        session.removeSource(index);
+        session.setPageSequence(rebuildSequence());
+        session.setImpositionResult(null);
+        addUploadModel(model);
+        return htmx != null ? STEP_UPLOAD : "index";
+    }
+
+    /** Validates that at least one source exists and advances to the binding step. */
+    @PostMapping("/wizard/upload/continue")
+    public String uploadContinue(
+            @RequestHeader(value = "HX-Request", required = false) String htmx,
+            Model model) {
+        if (!session.hasSources()) {
+            model.addAttribute("error", "Please add at least one PDF file.");
+            addUploadModel(model);
+            return htmx != null ? STEP_UPLOAD : "index";
+        }
         addBindingModel(model);
         return htmx != null ? STEP_BINDING : "index";
+    }
+
+    private PageSequence rebuildSequence() throws IOException {
+        if (session.getSources().isEmpty()) {
+            return null;
+        }
+        List<Path> paths = session.getSources().stream()
+            .map(WebSession.SourceEntry::tempPath)
+            .toList();
+        return PdfPageLoader.loadAll(paths);
     }
 
     /** Saves binding configuration and advances to the pages step. */
@@ -320,7 +361,7 @@ public class WizardController {
 
     private void addUploadModel(Model model) {
         model.addAttribute("step", 1);
-        model.addAttribute("filename", session.getOriginalFilename());
+        model.addAttribute("sources", session.getSources());
     }
 
     private void addBindingModel(Model model) {

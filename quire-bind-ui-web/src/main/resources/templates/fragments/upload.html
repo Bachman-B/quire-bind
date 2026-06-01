@@ -21,36 +21,75 @@
 
     <div class="step-card">
         <h2 class="step-title">Load Source</h2>
-        <p class="step-description">Upload the PDF you want to prepare for bookbinding.</p>
+        <p class="step-description">Add one or more PDFs. They will be combined in the order listed.</p>
 
         <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
 
+        <!-- Source list (shown when at least one PDF is loaded) -->
+        <div th:if="${not #lists.isEmpty(sources)}" class="source-list">
+            <table class="source-table">
+                <thead>
+                    <tr>
+                        <th class="col-num">#</th>
+                        <th class="col-name">File</th>
+                        <th class="col-pages">Pages</th>
+                        <th class="col-action"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="src, iter : ${sources}">
+                        <td class="col-num" th:text="${iter.index + 1}">1</td>
+                        <td class="col-name" th:text="${src.filename}">document.pdf</td>
+                        <td class="col-pages" th:text="${src.pageCount}">0</td>
+                        <td class="col-action">
+                            <form hx-post="/wizard/upload/remove"
+                                  hx-vals='{"index": "__${iter.index}__"}'
+                                  hx-target="#wizard-content"
+                                  hx-swap="innerHTML"
+                                  style="display:inline">
+                                <button type="submit" class="btn btn-danger-small">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add PDF form -->
         <form hx-post="/wizard/upload"
               hx-encoding="multipart/form-data"
               hx-target="#wizard-content"
               hx-swap="innerHTML"
-              hx-indicator=".upload-indicator">
+              hx-indicator=".upload-indicator"
+              class="add-pdf-form">
 
             <div class="field-group">
-                <label for="pdf-input" class="field-label">PDF file</label>
+                <label for="pdf-input" class="field-label"
+                       th:text="${#lists.isEmpty(sources)} ? 'PDF file' : 'Add another PDF'">PDF file</label>
                 <div class="file-input-row">
-                    <input id="pdf-input" type="file" name="pdf" accept=".pdf" required="required"
+                    <input id="pdf-input" type="file" name="pdf" accept=".pdf"
+                           th:required="${#lists.isEmpty(sources)}"
                            class="file-input"/>
+                    <button type="submit" class="btn btn-secondary"
+                            th:text="${#lists.isEmpty(sources)} ? 'Add PDF' : 'Add PDF'">Add PDF</button>
                 </div>
-                <p th:if="${filename}" class="field-hint">
-                    Current file: <strong th:text="${filename}"></strong>
-                </p>
             </div>
 
             <div class="upload-indicator htmx-indicator">
                 <span class="spinner"></span> Uploading…
             </div>
-
-            <div class="step-actions">
-                <span></span>
-                <button type="submit" class="btn btn-primary">Next →</button>
-            </div>
         </form>
+
+        <!-- Continue button (only shown once at least one source is loaded) -->
+        <div th:if="${not #lists.isEmpty(sources)}" class="step-actions">
+            <span></span>
+            <form hx-post="/wizard/upload/continue"
+                  hx-target="#wizard-content"
+                  hx-swap="innerHTML"
+                  style="display:inline">
+                <button type="submit" class="btn btn-primary">Next →</button>
+            </form>
+        </div>
     </div>
 </th:block>
 

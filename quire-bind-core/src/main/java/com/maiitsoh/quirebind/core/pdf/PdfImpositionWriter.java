@@ -42,7 +42,9 @@ import org.apache.pdfbox.util.Matrix;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -91,6 +93,7 @@ public final class PdfImpositionWriter {
 
     /**
      * Writes the imposed output PDF with optional marks and folios.
+     * Delegates to {@link #write(List, Map, Path, PaperSize, MarkConfig, NumberingConfig)}.
      *
      * @param signatures       composed signatures; must not be null
      * @param sourcePdfPath    path to the source PDF, or {@code null} if all pages are blank
@@ -108,6 +111,35 @@ public final class PdfImpositionWriter {
             PaperSize paperSize,
             MarkConfig markConfig,
             NumberingConfig numberingConfig) throws IOException {
+        Map<String, Path> docs = sourcePdfPath != null
+                ? Map.of(sourcePdfPath.toString(), sourcePdfPath)
+                : Map.of();
+        write(signatures, docs, outputPath, paperSize, markConfig, numberingConfig);
+    }
+
+    /**
+     * Writes the imposed output PDF sourcing pages from multiple source documents.
+     *
+     * <p>Each page in the sequence carries a {@code sourceDocumentId} that must match a key
+     * in {@code sourceDocPaths}. Pages whose document ID is absent or unmapped produce a
+     * blank half on the output sheet.
+     *
+     * @param signatures       composed signatures; must not be null
+     * @param sourceDocPaths   map from document ID to file path; may be null or empty
+     * @param outputPath       destination path; must not be null
+     * @param paperSize        book page size; must not be null; {@code CUSTOM} is unsupported
+     * @param markConfig       controls which output marks are rendered; null disables all marks
+     * @param numberingConfig  controls folio rendering; null disables folio output
+     * @throws IOException                   if any file operation fails
+     * @throws UnsupportedOperationException if {@code paperSize} is {@link PaperSize#CUSTOM}
+     */
+    public static void write(
+            List<Signature> signatures,
+            Map<String, Path> sourceDocPaths,
+            Path outputPath,
+            PaperSize paperSize,
+            MarkConfig markConfig,
+            NumberingConfig numberingConfig) throws IOException {
         Objects.requireNonNull(signatures, "signatures");
         Objects.requireNonNull(outputPath, "outputPath");
         Objects.requireNonNull(paperSize, "paperSize");
@@ -118,18 +150,18 @@ public final class PdfImpositionWriter {
         int totalSigs = signatures.size();
 
         PDFont font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-        PDDocument srcDoc = sourcePdfPath != null ? Loader.loadPDF(sourcePdfPath.toFile()) : null;
+        Map<String, PDDocument> openDocs = openSourceDocs(sourceDocPaths);
         try {
             try (PDDocument outDoc = new PDDocument()) {
                 LayerUtility layers = new LayerUtility(outDoc);
                 for (Signature sig : signatures) {
                     int sheetsInSig = sig.getSheets().size();
                     for (ImposedSheet sheet : sig.getSheets()) {
-                        addSheetPage(outDoc, layers, srcDoc, sheetRect, bookRect,
+                        addSheetPage(outDoc, layers, openDocs, sheetRect, bookRect,
                                 sheet.getFrontPages(), marks, numberingConfig, font,
                                 sheet.getSheetIndex(), sheetsInSig,
                                 sig.getSignatureIndex(), totalSigs);
-                        addSheetPage(outDoc, layers, srcDoc, sheetRect, bookRect,
+                        addSheetPage(outDoc, layers, openDocs, sheetRect, bookRect,
                                 sheet.getBackPages(), marks, numberingConfig, font,
                                 sheet.getSheetIndex(), sheetsInSig,
                                 sig.getSignatureIndex(), totalSigs);
@@ -138,8 +170,27 @@ public final class PdfImpositionWriter {
                 outDoc.save(outputPath.toFile());
             }
         } finally {
-            if (srcDoc != null) {
-                srcDoc.close();
+            closeAll(openDocs);
+        }
+    }
+
+    private static Map<String, PDDocument> openSourceDocs(Map<String, Path> sourceDocPaths)
+            throws IOException {
+        Map<String, PDDocument> docs = new LinkedHashMap<>();
+        if (sourceDocPaths != null) {
+            for (Map.Entry<String, Path> entry : sourceDocPaths.entrySet()) {
+                docs.put(entry.getKey(), Loader.loadPDF(entry.getValue().toFile()));
+            }
+        }
+        return docs;
+    }
+
+    private static void closeAll(Map<String, PDDocument> docs) {
+        for (PDDocument doc : docs.values()) {
+            try {
+                doc.close();
+            } catch (IOException ignored) {
+                // best-effort
             }
         }
     }
@@ -147,7 +198,7 @@ public final class PdfImpositionWriter {
     private static void addSheetPage(
             PDDocument outDoc,
             LayerUtility layers,
-            PDDocument srcDoc,
+            Map<String, PDDocument> srcDocs,
             PDRectangle sheetRect,
             PDRectangle bookRect,
             List<QuirePage> pages,
@@ -163,8 +214,8 @@ public final class PdfImpositionWriter {
         float halfW = bookRect.getWidth();
         float halfH = bookRect.getHeight();
         try (PDPageContentStream cs = new PDPageContentStream(outDoc, outPage)) {
-            placePageOnSheet(outDoc, layers, cs, srcDoc, pages.get(0), 0f, halfW, halfH);
-            placePageOnSheet(outDoc, layers, cs, srcDoc, pages.get(1), halfW, halfW, halfH);
+            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(0), 0f, halfW, halfH);
+            placePageOnSheet(outDoc, layers, cs, srcDocs, pages.get(1), halfW, halfW, halfH);
             if (marks.isFoldLines()) {
                 renderFoldLine(cs, halfW, halfH);
             }
@@ -190,18 +241,20 @@ public final class PdfImpositionWriter {
             PDDocument outDoc,
             LayerUtility layers,
             PDPageContentStream cs,
-            PDDocument srcDoc,
+            Map<String, PDDocument> srcDocs,
             QuirePage page,
             float xOffset,
             float halfW,
             float halfH) throws IOException {
-        if (srcDoc == null) {
-            return;
-        }
         if (page.getPageType() != PageType.CONTENT) {
             return;
         }
         if (page.getSourcePageIndex().isEmpty()) {
+            return;
+        }
+        String docId = page.getSourceDocumentId().orElse(null);
+        PDDocument srcDoc = docId != null ? srcDocs.get(docId) : null;
+        if (srcDoc == null) {
             return;
         }
         int srcIdx = page.getSourcePageIndex().get();

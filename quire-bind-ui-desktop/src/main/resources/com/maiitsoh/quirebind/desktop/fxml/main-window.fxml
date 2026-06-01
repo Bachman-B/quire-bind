@@ -74,14 +74,17 @@
                                       styleClass="mode-toggle-right"/>
                     </HBox>
 
-                    <!-- Single PDF pane -->
+                    <!-- Single PDF pane (supports multiple source PDFs in order) -->
                     <VBox fx:id="singlePdfPane" spacing="8">
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <TextField fx:id="pdfPathField" promptText="No PDF selected"
-                                       editable="false" HBox.hgrow="ALWAYS"/>
-                            <Button text="Browse…" onAction="#handleBrowseInput"
+                            <Label text="Source PDFs" styleClass="field-label"
+                                   HBox.hgrow="ALWAYS"/>
+                            <Button text="Add PDF…" onAction="#handleBrowseInput"
+                                    styleClass="action-button"/>
+                            <Button text="Remove" onAction="#handleRemoveSourcePdf"
                                     styleClass="action-button"/>
                         </HBox>
+                        <ListView fx:id="sourcePdfListView" prefHeight="110"/>
                         <Label fx:id="pageCountLabel" styleClass="info-label"/>
                     </VBox>
 

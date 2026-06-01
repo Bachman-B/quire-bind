@@ -35,15 +35,20 @@ import org.springframework.web.context.annotation.SessionScope;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Holds all wizard state for a single browser session. */
 @Component
 @SessionScope
 public class WebSession {
 
-    private Path sourcePdf;
-    private String originalFilename;
+    /** One uploaded source PDF and its associated metadata. */
+    public record SourceEntry(Path tempPath, String filename, int pageCount) {}
+
+    private final List<SourceEntry> sources = new ArrayList<>();
 
     private BindingTechnique technique = BindingTechnique.SEWN_SIGNATURES;
     private PaperSize paperSize = PaperSize.A4;
@@ -75,12 +80,12 @@ public class WebSession {
     private PageSequence pageSequence;
     private List<Signature> impositionResult;
 
-    /** Deletes the temp PDF upload when the session expires. */
+    /** Deletes all uploaded temp files when the session expires. */
     @PreDestroy
     public void cleanup() {
-        if (sourcePdf != null) {
+        for (SourceEntry e : sources) {
             try {
-                Files.deleteIfExists(sourcePdf);
+                Files.deleteIfExists(e.tempPath());
             } catch (IOException ignored) {
                 // best-effort cleanup
             }
@@ -92,31 +97,61 @@ public class WebSession {
         return impositionResult != null && !impositionResult.isEmpty();
     }
 
-    /** Returns the path to the uploaded source PDF, or null if not yet uploaded. */
-    public Path getSourcePdf() {
-        return sourcePdf;
+    /** Returns true if at least one source PDF has been uploaded. */
+    public boolean hasSources() {
+        return !sources.isEmpty();
     }
 
-    /** Sets the path to the uploaded source PDF, deleting any previous temp file. */
-    public void setSourcePdf(Path sourcePdf) {
-        if (this.sourcePdf != null && !this.sourcePdf.equals(sourcePdf)) {
+    /** Returns an unmodifiable view of the uploaded source entries in upload order. */
+    public List<SourceEntry> getSources() {
+        return List.copyOf(sources);
+    }
+
+    /** Appends a source entry. */
+    public void addSource(Path tempPath, String filename, int pageCount) {
+        sources.add(new SourceEntry(tempPath, filename, pageCount));
+    }
+
+    /**
+     * Removes the source at the given index, deleting its temp file.
+     * No-op if the index is out of range.
+     */
+    public void removeSource(int index) {
+        if (index < 0 || index >= sources.size()) {
+            return;
+        }
+        SourceEntry removed = sources.remove(index);
+        try {
+            Files.deleteIfExists(removed.tempPath());
+        } catch (IOException ignored) {
+            // best-effort
+        }
+    }
+
+    /** Removes all sources and deletes their temp files. */
+    public void clearSources() {
+        for (SourceEntry e : sources) {
             try {
-                Files.deleteIfExists(this.sourcePdf);
+                Files.deleteIfExists(e.tempPath());
             } catch (IOException ignored) {
                 // best-effort
             }
         }
-        this.sourcePdf = sourcePdf;
+        sources.clear();
     }
 
-    /** Returns the original filename of the uploaded PDF. */
+    /** Returns a map from source document ID (temp path string) to temp path, for the imposition writer. */
+    public Map<String, Path> getSourceDocPaths() {
+        Map<String, Path> map = new LinkedHashMap<>();
+        for (SourceEntry e : sources) {
+            map.put(e.tempPath().toString(), e.tempPath());
+        }
+        return map;
+    }
+
+    /** Returns the original filename of the first uploaded source, or null if none. */
     public String getOriginalFilename() {
-        return originalFilename;
-    }
-
-    /** Sets the original filename of the uploaded PDF. */
-    public void setOriginalFilename(String originalFilename) {
-        this.originalFilename = originalFilename;
+        return sources.isEmpty() ? null : sources.get(0).filename();
     }
 
     /** Returns the selected binding technique. */

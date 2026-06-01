@@ -465,6 +465,46 @@ a:hover { text-decoration: underline; }
 }
 .btn-sm:hover { background: var(--bg); border-color: var(--blue); }
 
+/* ── Source list (multi-PDF upload) ─────────────────────────────────── */
+.source-list { margin-bottom: 16px; }
+.source-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.source-table th {
+  text-align: left;
+  padding: 4px 8px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.source-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+.source-table .col-num  { width: 28px; color: var(--text-muted); text-align: center; }
+.source-table .col-name { font-size: 0.88em; word-break: break-all; }
+.source-table .col-pages { width: 50px; text-align: right; color: var(--text-muted); }
+.source-table .col-action { width: 36px; text-align: center; }
+.add-pdf-form { margin-bottom: 8px; }
+.file-input-row { display: flex; gap: 8px; align-items: center; }
+.file-input-row .file-input { flex: 1; }
+.btn-danger-small {
+  padding: 2px 7px;
+  font-size: 0.78em;
+  background: #fff4f4;
+  border: 1px solid #f0b8b8;
+  border-radius: var(--radius);
+  color: #8b1a1a;
+  cursor: pointer;
+}
+.btn-danger-small:hover { background: #fde0e0; }
+.btn-secondary {
+  padding: 6px 14px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.btn-secondary:hover { background: var(--bg); border-color: var(--blue); }
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }

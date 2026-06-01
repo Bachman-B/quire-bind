@@ -103,6 +103,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -131,7 +132,7 @@ public final class MainController implements Initializable {
     @FXML private ToggleButton batchToggle;
     @FXML private VBox singlePdfPane;
     @FXML private VBox batchPane;
-    @FXML private TextField pdfPathField;
+    @FXML private ListView<String> sourcePdfListView;
     @FXML private Label pageCountLabel;
     @FXML private TextField quirePathField;
     @FXML private Label jobCountLabel;
@@ -351,7 +352,7 @@ public final class MainController implements Initializable {
     private void handleMenuNewProject() {
         state.reset();
         expandedSignatures.clear();
-        pdfPathField.clear();
+        sourcePdfListView.getItems().clear();
         pageCountLabel.setText("");
         quirePathField.clear();
         jobCountLabel.setText("");
@@ -391,9 +392,17 @@ public final class MainController implements Initializable {
 
     @FXML
     private void handleMenuOpenPdf() {
-        File f = pdfChooser("Open PDF").showOpenDialog(wizardStack.getScene().getWindow());
-        if (f != null) {
-            loadPdf(f.toPath());
+        List<File> files = pdfChooser("Open PDF")
+            .showOpenMultipleDialog(wizardStack.getScene().getWindow());
+        if (files != null && !files.isEmpty()) {
+            state.reset();
+            sourcePdfListView.getItems().clear();
+            pageCountLabel.setText("");
+            thumbnailCache.clear();
+            pageLabels.clear();
+            for (File f : files) {
+                addInputPdf(f.toPath());
+            }
             singlePdfToggle.setSelected(true);
             showStep(0);
         }
@@ -435,11 +444,25 @@ public final class MainController implements Initializable {
 
     @FXML
     private void handleBrowseInput() {
-        File f = pdfChooser("Select Source PDF").showOpenDialog(
-            wizardStack.getScene().getWindow());
-        if (f != null) {
-            loadPdf(f.toPath());
+        FileChooser fc = pdfChooser("Add Source PDF");
+        fc.setTitle("Add PDF files");
+        List<File> files = fc.showOpenMultipleDialog(wizardStack.getScene().getWindow());
+        if (files != null) {
+            for (File f : files) {
+                addInputPdf(f.toPath());
+            }
         }
+    }
+
+    @FXML
+    private void handleRemoveSourcePdf() {
+        int idx = sourcePdfListView.getSelectionModel().getSelectedIndex();
+        if (idx < 0) {
+            return;
+        }
+        state.removeInputPdf(idx);
+        sourcePdfListView.getItems().remove(idx);
+        rebuildSequenceFromSources();
     }
 
     @FXML
@@ -453,15 +476,39 @@ public final class MainController implements Initializable {
         }
     }
 
-    private void loadPdf(Path path) {
+    private void addInputPdf(Path path) {
+        if (state.getInputPdfs().contains(path)) {
+            return;
+        }
+        state.addInputPdf(path);
+        try (var doc = org.apache.pdfbox.Loader.loadPDF(path.toFile())) {
+            int pages = doc.getNumberOfPages();
+            sourcePdfListView.getItems().add(path.getFileName() + " (" + pages + " pages)");
+        } catch (IOException e) {
+            state.removeInputPdf(state.getInputPdfs().size() - 1);
+            showError("Failed to open PDF", e.getMessage());
+            return;
+        }
+        rebuildSequenceFromSources();
+    }
+
+    private void rebuildSequenceFromSources() {
         try {
-            PageSequence seq = PdfPageLoader.load(path);
-            state.setInputPdf(path);
-            state.setPageCount(seq.pageCount());
+            if (state.getInputPdfs().isEmpty()) {
+                state.setPageSequence(null);
+                pageCountLabel.setText("");
+                setStatus("No source PDFs loaded.");
+                return;
+            }
+            PageSequence seq = PdfPageLoader.loadAll(state.getInputPdfs());
             state.setPageSequence(seq);
-            pdfPathField.setText(path.toString());
-            pageCountLabel.setText("Pages loaded: " + seq.pageCount());
-            setStatus("Loaded " + path.getFileName() + " — " + seq.pageCount() + " pages.");
+            int total = seq.pageCount();
+            int sources = state.getInputPdfs().size();
+            pageCountLabel.setText(
+                sources + " file" + (sources != 1 ? "s" : "")
+                + " — " + total + " page" + (total != 1 ? "s" : "") + " total");
+            setStatus("Loaded " + sources + " source" + (sources != 1 ? "s" : "")
+                + ", " + total + " pages.");
         } catch (IOException e) {
             showError("Failed to load PDF", e.getMessage());
         }
@@ -1071,24 +1118,30 @@ public final class MainController implements Initializable {
             updateSidePanel(pageListView.getSelectionModel().getSelectedItem());
             return;
         }
-        Path pdf = state.getInputPdf();
+        Map<String, Path> sourcePaths = state.getSourceDocPaths();
         PageSequence seq = state.getPageSequence();
-        if (pdf == null || seq == null) {
+        if (sourcePaths.isEmpty() || seq == null) {
             thumbnailCheck.setSelected(false);
             return;
         }
-        startThumbnailLoading(pdf, seq);
+        startThumbnailLoading(sourcePaths, seq);
     }
 
-    private void startThumbnailLoading(Path pdf, PageSequence seq) {
+    private void startThumbnailLoading(Map<String, Path> sourcePaths, PageSequence seq) {
         Task<Map<Integer, Image>> task = new Task<>() {
             @Override
             protected Map<Integer, Image> call() throws Exception {
                 Map<Integer, Image> cache = new HashMap<>();
                 List<QuirePage> seqPages = seq.getPages();
                 int total = seqPages.size();
-                try (PDDocument doc = Loader.loadPDF(pdf.toFile())) {
-                    PDFRenderer renderer = new PDFRenderer(doc);
+                Map<String, PDDocument> openDocs = new LinkedHashMap<>();
+                Map<String, PDFRenderer> renderers = new LinkedHashMap<>();
+                try {
+                    for (Map.Entry<String, Path> entry : sourcePaths.entrySet()) {
+                        PDDocument doc = Loader.loadPDF(entry.getValue().toFile());
+                        openDocs.put(entry.getKey(), doc);
+                        renderers.put(entry.getKey(), new PDFRenderer(doc));
+                    }
                     for (int seqIdx = 0; seqIdx < total && !isCancelled(); seqIdx++) {
                         updateProgress(seqIdx, total);
                         updateMessage("Page " + (seqIdx + 1) + " / " + total);
@@ -1096,11 +1149,24 @@ public final class MainController implements Initializable {
                         if (page.getSourcePageIndex().isEmpty()) {
                             continue;
                         }
+                        String docId = page.getSourceDocumentId().orElse(null);
+                        PDFRenderer renderer = docId != null ? renderers.get(docId) : null;
+                        if (renderer == null) {
+                            continue;
+                        }
                         int pdfIdx = page.getSourcePageIndex().get();
                         BufferedImage bi = renderer.renderImageWithDPI(pdfIdx, 72);
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         ImageIO.write(bi, "png", baos);
                         cache.put(seqIdx, new Image(new ByteArrayInputStream(baos.toByteArray())));
+                    }
+                } finally {
+                    for (PDDocument doc : openDocs.values()) {
+                        try {
+                            doc.close();
+                        } catch (IOException ignored) {
+                            // best-effort
+                        }
                     }
                 }
                 return cache;
@@ -1472,7 +1538,7 @@ public final class MainController implements Initializable {
         try {
             PdfImpositionWriter.write(
                 state.getImpositionResult(),
-                state.getInputPdf(),
+                state.getSourceDocPaths(),
                 state.getOutputPdf(),
                 state.getPaperSize(),
                 markConfig,

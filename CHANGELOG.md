@@ -28,10 +28,10 @@ Changes merged to `main` but not yet in a release build are listed here.
 When a release is made, this section is moved down and given a version number.
 
 ### Added
-- (nothing yet)
-
-### Fixed
-- (nothing yet)
+- **Multi-PDF binding** — load multiple PDF files as source material for a single binding
+  job. Files are combined in the order they are added; the page sequence editor and all
+  downstream steps (imposition, export) work transparently across sources. Available in
+  both the desktop and web interfaces.
 
 ---
 

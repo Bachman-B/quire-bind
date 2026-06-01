@@ -110,7 +110,7 @@ public class WebImpositionService {
             NumberingConfig numberingConfig = buildNumberingConfig(session);
             PdfImpositionWriter.write(
                 session.getImpositionResult(),
-                session.getSourcePdf(),
+                session.getSourceDocPaths(),
                 tempOut,
                 session.getPaperSize(),
                 markConfig,

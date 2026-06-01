@@ -26,6 +26,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -56,20 +57,38 @@ public final class PdfPageLoader {
      */
     public static PageSequence load(Path pdfPath) throws IOException {
         Objects.requireNonNull(pdfPath, "pdfPath");
-        try (PDDocument doc = Loader.loadPDF(pdfPath.toFile())) {
-            PageSequence seq = new PageSequence();
-            String docId = pdfPath.toString();
-            int pageCount = doc.getNumberOfPages();
-            for (int i = 0; i < pageCount; i++) {
-                QuirePage page = QuirePage.builder()
-                        .physicalPosition(i)
-                        .pageType(PageType.CONTENT)
-                        .sourceDocumentId(docId)
-                        .sourcePageIndex(i)
-                        .build();
-                seq.insertPage(i, page);
+        return loadAll(List.of(pdfPath));
+    }
+
+    /**
+     * Loads pages from multiple PDF files into a single {@link PageSequence}, concatenating
+     * them in the order supplied. Each page retains its source document identity so the
+     * imposition writer can open the correct file when rendering.
+     *
+     * @param pdfPaths ordered list of source PDF paths; must not be null or contain null
+     * @return a sequence with all pages from all sources in supplied order
+     * @throws IOException if any file cannot be read or is not a valid PDF
+     */
+    public static PageSequence loadAll(List<Path> pdfPaths) throws IOException {
+        Objects.requireNonNull(pdfPaths, "pdfPaths");
+        PageSequence seq = new PageSequence();
+        int position = 0;
+        for (Path pdfPath : pdfPaths) {
+            Objects.requireNonNull(pdfPath, "pdfPaths contains null");
+            try (PDDocument doc = Loader.loadPDF(pdfPath.toFile())) {
+                String docId = pdfPath.toString();
+                int pageCount = doc.getNumberOfPages();
+                for (int i = 0; i < pageCount; i++) {
+                    QuirePage page = QuirePage.builder()
+                            .physicalPosition(position++)
+                            .pageType(PageType.CONTENT)
+                            .sourceDocumentId(docId)
+                            .sourcePageIndex(i)
+                            .build();
+                    seq.insertPage(seq.pageCount(), page);
+                }
             }
-            return seq;
         }
+        return seq;
     }
 }
