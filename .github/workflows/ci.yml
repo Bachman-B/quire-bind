@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -25,14 +27,27 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: mvn site -B -DskipTests
 
+      - name: Stage reports for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p /tmp/gh-pages/reports
+          # Root aggregate site (index + module links)
+          cp -r target/site/. /tmp/gh-pages/reports/
+          # Per-module JaCoCo + Surefire reports
+          for module in quire-bind-core quire-bind-batch quire-bind-guides quire-bind-test; do
+            if [ -d "$module/target/site" ]; then
+              mkdir -p "/tmp/gh-pages/reports/$module"
+              cp -r "$module/target/site/." "/tmp/gh-pages/reports/$module/"
+            fi
+          done
+
       - name: Publish reports to GitHub Pages
         if: github.ref == 'refs/heads/main'
-        continue-on-error: true
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/site
-          destination_dir: reports
+          publish_dir: /tmp/gh-pages
+          keep_files: false
 
   checkstyle:
     runs-on: ubuntu-latest
