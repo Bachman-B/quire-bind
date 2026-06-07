@@ -21,6 +21,7 @@ package com.maiitsoh.quirebind.core.imposition;
 import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
 import com.maiitsoh.quirebind.core.model.PageType;
+import com.maiitsoh.quirebind.core.model.PageZone;
 import com.maiitsoh.quirebind.core.model.QuirePage;
 
 import java.util.ArrayList;
@@ -93,23 +94,24 @@ public final class FolioAssigner {
 
             if (isFrontMatter) {
                 Integer folio = nextFolio(config.getFrontMatterStyle(), frontCounter);
-                result.add(folio != null ? page.toBuilder().logicalPageNumber(folio).build() : page);
+                QuirePage.Builder b = page.toBuilder().pageZone(PageZone.FRONT_MATTER);
+                result.add(folio != null ? b.logicalPageNumber(folio).build() : b.build());
                 if (folio != null) {
                     frontCounter++;
                 }
             } else if (isBody) {
                 Integer folio = nextFolio(config.getBodyStyle(), bodyCounter);
                 boolean suppress = firstBody && config.isSuppressFirstBodyFolio();
-                result.add(folio != null && !suppress
-                        ? page.toBuilder().logicalPageNumber(folio).build()
-                        : page);
+                QuirePage.Builder b = page.toBuilder().pageZone(PageZone.BODY);
+                result.add(folio != null && !suppress ? b.logicalPageNumber(folio).build() : b.build());
                 if (folio != null) {
                     bodyCounter++;
                 }
                 firstBody = false;
             } else if (isRearMatter) {
                 Integer folio = nextFolio(config.getRearMatterStyle(), rearCounter);
-                result.add(folio != null ? page.toBuilder().logicalPageNumber(folio).build() : page);
+                QuirePage.Builder b = page.toBuilder().pageZone(PageZone.REAR_MATTER);
+                result.add(folio != null ? b.logicalPageNumber(folio).build() : b.build());
                 if (folio != null) {
                     rearCounter++;
                 }

@@ -21,12 +21,16 @@ package com.maiitsoh.quirebind.test.system;
 import com.maiitsoh.quirebind.core.imposition.ImpositionEngine;
 import com.maiitsoh.quirebind.core.model.BindingTechnique;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
+import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.ImpositionLayout;
 import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
+import com.maiitsoh.quirebind.core.model.PageSequence;
+import com.maiitsoh.quirebind.core.model.PageType;
 import com.maiitsoh.quirebind.core.model.PaddingConfig;
 import com.maiitsoh.quirebind.core.model.PaperSize;
+import com.maiitsoh.quirebind.core.model.QuirePage;
 import com.maiitsoh.quirebind.core.model.QuireProject;
 import com.maiitsoh.quirebind.core.model.ReadingDirection;
 import com.maiitsoh.quirebind.core.model.Signature;
@@ -47,6 +51,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Verifies that the folio imposition formula places source pages on the correct sheet halves
@@ -170,6 +175,64 @@ class FolioOrderVerificationTest {
         String[] halves = extractHalves(out, 0, PDRectangle.A4);
         assertEquals("1", halves[0].trim(), "RTL front left half should be page 1");
         assertEquals("4", halves[1].trim(), "RTL front right half should be page 4");
+    }
+
+    /**
+     * Regression test for: body folio rendered even when bodyStyle is NONE.
+     *
+     * <p>Simulates the web wizard flow where imposition runs with the default ARABIC style
+     * (assigning logical page numbers), but the user then changes to NONE before downloading.
+     * The renderer must respect the export-time style and suppress all body folios.
+     *
+     * <p>Uses blank CONTENT pages (no source PDF) so the only text in the output PDF
+     * would be folios — allowing a clean assertion that no text appears.
+     */
+    @Test
+    void bodyStyleNoneSuppressesFoliosEvenWhenPageNumbersWerePreAssigned() throws IOException {
+        // Build a page sequence with 4 blank content pages (no source PDF)
+        PageSequence seq = new PageSequence(List.of(
+                QuirePage.builder().physicalPosition(0).pageType(PageType.CONTENT).build(),
+                QuirePage.builder().physicalPosition(1).pageType(PageType.CONTENT).build(),
+                QuirePage.builder().physicalPosition(2).pageType(PageType.CONTENT).build(),
+                QuirePage.builder().physicalPosition(3).pageType(PageType.CONTENT).build()));
+
+        QuireProject project = QuireProject.builder()
+                .name("Regression")
+                .bindingTechnique(BindingTechnique.SADDLE_STITCH)
+                .paperSize(PaperSize.A4)
+                .readingDirection(ReadingDirection.LTR)
+                .layout(ImpositionLayout.FOLIO)
+                .pageSequence(seq)
+                .paddingConfig(PaddingConfig.builder().build())
+                .numberingConfig(NumberingConfig.builder().build()) // ARABIC body — assigns numbers
+                .markConfig(MarkConfig.builder().build())
+                .creepConfig(CreepConfig.builder().build())
+                .build();
+
+        List<Signature> sigs = ImpositionEngine.impose(project);
+
+        // Verify pre-condition: pages have logical numbers after ARABIC impose
+        boolean anyNumbered = sigs.stream()
+                .flatMap(s -> s.getSheets().stream())
+                .flatMap(sh -> sh.getFrontPages().stream())
+                .anyMatch(p -> p.getLogicalPageNumber().isPresent());
+        assertTrue(anyNumbered, "pre-condition: ARABIC impose should assign logical page numbers");
+
+        // Export with bodyStyle = NONE — no folios should appear
+        Path out = tempDir.resolve("none-body.pdf");
+        NumberingConfig noneConfig = NumberingConfig.builder().bodyStyle(FolioStyle.NONE).build();
+        PdfImpositionWriter.write(sigs, (Path) null, out, PaperSize.A4,
+                MarkConfig.builder().build(), noneConfig);
+
+        // Pages are blank (no source content), so any text in the output comes from folios.
+        // With bodyStyle = NONE the output must be entirely text-free.
+        try (PDDocument doc = Loader.loadPDF(out.toFile())) {
+            org.apache.pdfbox.text.PDFTextStripper stripper =
+                    new org.apache.pdfbox.text.PDFTextStripper();
+            String text = stripper.getText(doc).strip();
+            assertTrue(text.isEmpty(),
+                    "expected no text in output with bodyStyle=NONE, but found: " + text);
+        }
     }
 
     /**

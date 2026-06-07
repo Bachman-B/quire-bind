@@ -37,6 +37,7 @@ class QuirePageTest {
                 .build();
         assertEquals(0, page.getPhysicalPosition());
         assertEquals(PageType.CONTENT, page.getPageType());
+        assertTrue(page.getPageZone().isEmpty());
         assertTrue(page.getLogicalPageNumber().isEmpty());
         assertTrue(page.getSourceDocumentId().isEmpty());
         assertTrue(page.getSourcePageIndex().isEmpty());
@@ -47,12 +48,14 @@ class QuirePageTest {
         QuirePage page = QuirePage.builder()
                 .physicalPosition(3)
                 .pageType(PageType.AESTHETIC)
+                .pageZone(PageZone.FRONT_MATTER)
                 .logicalPageNumber(7)
                 .sourceDocumentId("input.pdf")
                 .sourcePageIndex(6)
                 .build();
         assertEquals(3, page.getPhysicalPosition());
         assertEquals(PageType.AESTHETIC, page.getPageType());
+        assertEquals(PageZone.FRONT_MATTER, page.getPageZone().orElseThrow());
         assertEquals(7, page.getLogicalPageNumber().orElseThrow());
         assertEquals("input.pdf", page.getSourceDocumentId().orElseThrow());
         assertEquals(6, page.getSourcePageIndex().orElseThrow());
@@ -111,6 +114,7 @@ class QuirePageTest {
         QuirePage original = QuirePage.builder()
                 .physicalPosition(2)
                 .pageType(PageType.CONTENT)
+                .pageZone(PageZone.BODY)
                 .logicalPageNumber(5)
                 .sourceDocumentId("doc.pdf")
                 .sourcePageIndex(4)
@@ -189,6 +193,22 @@ class QuirePageTest {
         QuirePage b = QuirePage.builder().physicalPosition(0).pageType(PageType.CONTENT)
                 .sourcePageIndex(1).build();
         assertNotEquals(a, b);
+    }
+
+    @Test
+    void equalsDifferentPageZone() {
+        QuirePage a = QuirePage.builder().physicalPosition(0).pageType(PageType.CONTENT)
+                .pageZone(PageZone.BODY).build();
+        QuirePage b = QuirePage.builder().physicalPosition(0).pageType(PageType.CONTENT)
+                .pageZone(PageZone.FRONT_MATTER).build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    void pageZoneNullClearsOptional() {
+        QuirePage page = QuirePage.builder().pageType(PageType.CONTENT)
+                .pageZone(null).build();
+        assertTrue(page.getPageZone().isEmpty());
     }
 
     @Test

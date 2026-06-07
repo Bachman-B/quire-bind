@@ -21,6 +21,7 @@ package com.maiitsoh.quirebind.core.imposition;
 import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.NumberingConfig;
 import com.maiitsoh.quirebind.core.model.PageType;
+import com.maiitsoh.quirebind.core.model.PageZone;
 import com.maiitsoh.quirebind.core.model.QuirePage;
 import org.junit.jupiter.api.Test;
 
@@ -234,6 +235,51 @@ class FolioAssignerTest {
         List<QuirePage> result = FolioAssigner.assign(pages, defaultConfig());
         assertEquals(0, result.get(0).getPhysicalPosition());
         assertEquals(1, result.get(1).getPhysicalPosition());
+    }
+
+    @Test
+    void bodyPageGetsBodyZone() {
+        List<QuirePage> pages = List.of(page(PageType.CONTENT), page(PageType.CONTENT));
+        List<QuirePage> result = FolioAssigner.assign(pages, defaultConfig());
+        assertEquals(PageZone.BODY, result.get(0).getPageZone().orElseThrow());
+        assertEquals(PageZone.BODY, result.get(1).getPageZone().orElseThrow());
+    }
+
+    @Test
+    void frontMatterPageGetsFrontMatterZone() {
+        List<QuirePage> pages = List.of(page(PageType.AESTHETIC), page(PageType.CONTENT));
+        List<QuirePage> result = FolioAssigner.assign(pages, defaultConfig());
+        assertEquals(PageZone.FRONT_MATTER, result.get(0).getPageZone().orElseThrow());
+    }
+
+    @Test
+    void rearMatterPageGetsRearMatterZone() {
+        List<QuirePage> pages = List.of(page(PageType.CONTENT), page(PageType.AESTHETIC));
+        List<QuirePage> result = FolioAssigner.assign(pages, defaultConfig());
+        assertEquals(PageZone.REAR_MATTER, result.get(1).getPageZone().orElseThrow());
+    }
+
+    @Test
+    void fillerBlankHasNoZone() {
+        List<QuirePage> pages = List.of(page(PageType.CONTENT), page(PageType.FILLER_BLANK));
+        List<QuirePage> result = FolioAssigner.assign(pages, defaultConfig());
+        assertTrue(result.get(1).getPageZone().isEmpty());
+    }
+
+    @Test
+    void completionBlankHasNoZone() {
+        List<QuirePage> pages = List.of(page(PageType.COMPLETION_BLANK), page(PageType.CONTENT));
+        List<QuirePage> result = FolioAssigner.assign(pages, defaultConfig());
+        assertTrue(result.get(0).getPageZone().isEmpty());
+    }
+
+    @Test
+    void bodyZoneSetEvenWhenStyleIsNone() {
+        NumberingConfig cfg = NumberingConfig.builder().bodyStyle(FolioStyle.NONE).build();
+        List<QuirePage> pages = List.of(page(PageType.CONTENT));
+        List<QuirePage> result = FolioAssigner.assign(pages, cfg);
+        assertEquals(PageZone.BODY, result.get(0).getPageZone().orElseThrow());
+        assertTrue(result.get(0).getLogicalPageNumber().isEmpty());
     }
 
     @Test

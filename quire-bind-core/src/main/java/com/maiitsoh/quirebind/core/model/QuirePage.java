@@ -33,6 +33,7 @@ public final class QuirePage {
 
     private final int physicalPosition;
     private final PageType pageType;
+    private final Optional<PageZone> pageZone;
     private final Optional<Integer> logicalPageNumber;
     private final Optional<String> sourceDocumentId;
     private final Optional<Integer> sourcePageIndex;
@@ -40,6 +41,7 @@ public final class QuirePage {
     private QuirePage(Builder builder) {
         this.physicalPosition = builder.physicalPosition;
         this.pageType = builder.pageType;
+        this.pageZone = builder.pageZone;
         this.logicalPageNumber = builder.logicalPageNumber;
         this.sourceDocumentId = builder.sourceDocumentId;
         this.sourcePageIndex = builder.sourcePageIndex;
@@ -53,6 +55,15 @@ public final class QuirePage {
     /** Returns the type of this page. */
     public PageType getPageType() {
         return pageType;
+    }
+
+    /**
+     * Returns the numbering zone this page belongs to, if assigned.
+     * Absent for {@link PageType#COMPLETION_BLANK} and {@link PageType#FILLER_BLANK} pages,
+     * and for aesthetic pages sandwiched between content pages.
+     */
+    public Optional<PageZone> getPageZone() {
+        return pageZone;
     }
 
     /**
@@ -88,6 +99,7 @@ public final class QuirePage {
         return new Builder()
                 .physicalPosition(this.physicalPosition)
                 .pageType(this.pageType)
+                .pageZone(this.pageZone.orElse(null))
                 .logicalPageNumber(this.logicalPageNumber.orElse(null))
                 .sourceDocumentId(this.sourceDocumentId.orElse(null))
                 .sourcePageIndex(this.sourcePageIndex.orElse(null));
@@ -103,6 +115,7 @@ public final class QuirePage {
 
         private int physicalPosition;
         private PageType pageType;
+        private Optional<PageZone> pageZone = Optional.empty();
         private Optional<Integer> logicalPageNumber = Optional.empty();
         private Optional<String> sourceDocumentId = Optional.empty();
         private Optional<Integer> sourcePageIndex = Optional.empty();
@@ -132,6 +145,17 @@ public final class QuirePage {
          */
         public Builder pageType(PageType pageType) {
             this.pageType = Objects.requireNonNull(pageType, "pageType");
+            return this;
+        }
+
+        /**
+         * Sets the numbering zone, or null if this page belongs to no zone.
+         *
+         * @param pageZone the zone, or null
+         * @return this builder
+         */
+        public Builder pageZone(PageZone pageZone) {
+            this.pageZone = Optional.ofNullable(pageZone);
             return this;
         }
 
@@ -196,6 +220,7 @@ public final class QuirePage {
         }
         return physicalPosition == other.physicalPosition
                 && pageType == other.pageType
+                && pageZone.equals(other.pageZone)
                 && logicalPageNumber.equals(other.logicalPageNumber)
                 && sourceDocumentId.equals(other.sourceDocumentId)
                 && sourcePageIndex.equals(other.sourcePageIndex);
@@ -203,7 +228,7 @@ public final class QuirePage {
 
     @Override
     public int hashCode() {
-        return Objects.hash(physicalPosition, pageType, logicalPageNumber,
+        return Objects.hash(physicalPosition, pageType, pageZone, logicalPageNumber,
                 sourceDocumentId, sourcePageIndex);
     }
 
@@ -212,6 +237,7 @@ public final class QuirePage {
         return "QuirePage{"
                 + "physicalPosition=" + physicalPosition
                 + ", pageType=" + pageType
+                + ", pageZone=" + pageZone.map(Enum::name).orElse("none")
                 + ", logicalPageNumber=" + logicalPageNumber
                 + '}';
     }

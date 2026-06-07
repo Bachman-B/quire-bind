@@ -21,6 +21,7 @@ package com.maiitsoh.quirebind.core.pdf;
 import com.maiitsoh.quirebind.core.creep.CreepTransformApplier;
 import com.maiitsoh.quirebind.core.model.CreepConfig;
 import com.maiitsoh.quirebind.core.model.FolioPosition;
+import com.maiitsoh.quirebind.core.model.FolioStyle;
 import com.maiitsoh.quirebind.core.model.ImposedSheet;
 import com.maiitsoh.quirebind.core.model.MarkConfig;
 import com.maiitsoh.quirebind.core.model.SewingConfig;
@@ -527,6 +528,16 @@ public final class PdfImpositionWriter {
             float halfH) throws IOException {
         if (page.getLogicalPageNumber().isEmpty()) {
             return;
+        }
+        if (page.getPageZone().isPresent()) {
+            FolioStyle zoneStyle = switch (page.getPageZone().get()) {
+                case FRONT_MATTER -> numberingConfig.getFrontMatterStyle();
+                case BODY         -> numberingConfig.getBodyStyle();
+                case REAR_MATTER  -> numberingConfig.getRearMatterStyle();
+            };
+            if (zoneStyle == FolioStyle.NONE) {
+                return;
+            }
         }
         int num = page.getLogicalPageNumber().get();
         String text = String.valueOf(num);
