@@ -32,6 +32,17 @@ When a release is made, this section is moved down and given a version number.
 
 ---
 
+## [1.3.2] — 2026-06-07
+
+### Fixed
+- **About dialogue showed wrong version** — the desktop app's About dialogue
+  always displayed *QuireBind 1.0.0-SNAPSHOT* regardless of the installed
+  version. The version string is now read from a Maven-filtered properties
+  file bundled in the JAR, so it will always match the release automatically.
+  (Fixes [#1](https://github.com/Bachman-B/quire-bind/issues/1))
+
+---
+
 ## [1.3.1] — 2026-06-07
 
 ### Fixed

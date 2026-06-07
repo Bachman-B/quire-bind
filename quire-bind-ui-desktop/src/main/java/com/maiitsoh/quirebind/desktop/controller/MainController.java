@@ -104,6 +104,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -484,11 +486,24 @@ public final class MainController implements Initializable {
     private void handleAbout() {
         Alert a = new Alert(AlertType.INFORMATION);
         a.setTitle("About QuireBind");
-        a.setHeaderText("QuireBind 1.0.0-SNAPSHOT");
+        a.setHeaderText("QuireBind " + appVersion());
         a.setContentText(
             "FOSS desktop application for preparing PDF files for bookbinding.\n"
             + "Licensed under the GNU Affero General Public License v3.0.");
         a.showAndWait();
+    }
+
+    private static String appVersion() {
+        try (InputStream in = MainController.class.getResourceAsStream("../application.properties")) {
+            if (in == null) {
+                return "unknown";
+            }
+            Properties props = new Properties();
+            props.load(in);
+            return props.getProperty("version", "unknown");
+        } catch (IOException e) {
+            return "unknown";
+        }
     }
 
     // ── Step 1 actions ────────────────────────────────────────────────────────
