@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<licensePluginReport goal="CHECK" timestamp="1780840351702">
-    <module artifactId="quire-bind" groupId="com.maiitsoh.quirebind" version="1.3.2"/>
+<licensePluginReport goal="CHECK" timestamp="1780846673847">
+    <module artifactId="quire-bind" groupId="com.maiitsoh.quirebind" version="1.3.3"/>
     <files/>
 </licensePluginReport>
