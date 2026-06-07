@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<licensePluginReport goal="CHECK" timestamp="1780839245848">
-    <module artifactId="quire-bind-core" groupId="com.maiitsoh.quirebind" version="1.3.0"/>
+<licensePluginReport goal="CHECK" timestamp="1780839556191">
+    <module artifactId="quire-bind-core" groupId="com.maiitsoh.quirebind" version="1.3.1"/>
     <files>
         <file path="src/main/java/com/maiitsoh/quirebind/core/binding/BindingGroupMapper.java" result="PRESENT"/>
         <file path="src/main/java/com/maiitsoh/quirebind/core/creep/CreepCalculator.java" result="PRESENT"/>
