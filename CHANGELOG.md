@@ -32,6 +32,17 @@ When a release is made, this section is moved down and given a version number.
 
 ---
 
+## [1.3.1] — 2026-06-07
+
+### Fixed
+- **Page numbering set to None still printed numbers** — when the body folio
+  style was set to *None* on the Export step, page numbers were still printed
+  on body pages in the output PDF. The renderer now correctly suppresses folios
+  for any zone whose style is *None*, even when logical page numbers were
+  assigned during an earlier imposition step.
+
+---
+
 ## [1.3.0] — 2026-06-01
 
 ### Added
