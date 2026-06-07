@@ -33,26 +33,37 @@ public final class QuirePage {
 
     private final int physicalPosition;
     private final PageType pageType;
+    private final Optional&lt;PageZone&gt; pageZone;
     private final Optional&lt;Integer&gt; logicalPageNumber;
     private final Optional&lt;String&gt; sourceDocumentId;
     private final Optional&lt;Integer&gt; sourcePageIndex;
 
-<span class="fc" id="L40">    private QuirePage(Builder builder) {</span>
-<span class="fc" id="L41">        this.physicalPosition = builder.physicalPosition;</span>
-<span class="fc" id="L42">        this.pageType = builder.pageType;</span>
-<span class="fc" id="L43">        this.logicalPageNumber = builder.logicalPageNumber;</span>
-<span class="fc" id="L44">        this.sourceDocumentId = builder.sourceDocumentId;</span>
-<span class="fc" id="L45">        this.sourcePageIndex = builder.sourcePageIndex;</span>
-<span class="fc" id="L46">    }</span>
+<span class="fc" id="L41">    private QuirePage(Builder builder) {</span>
+<span class="fc" id="L42">        this.physicalPosition = builder.physicalPosition;</span>
+<span class="fc" id="L43">        this.pageType = builder.pageType;</span>
+<span class="fc" id="L44">        this.pageZone = builder.pageZone;</span>
+<span class="fc" id="L45">        this.logicalPageNumber = builder.logicalPageNumber;</span>
+<span class="fc" id="L46">        this.sourceDocumentId = builder.sourceDocumentId;</span>
+<span class="fc" id="L47">        this.sourcePageIndex = builder.sourcePageIndex;</span>
+<span class="fc" id="L48">    }</span>
 
     /** Returns the 0-based position of this page in its containing sequence. */
     public int getPhysicalPosition() {
-<span class="fc" id="L50">        return physicalPosition;</span>
+<span class="fc" id="L52">        return physicalPosition;</span>
     }
 
     /** Returns the type of this page. */
     public PageType getPageType() {
-<span class="fc" id="L55">        return pageType;</span>
+<span class="fc" id="L57">        return pageType;</span>
+    }
+
+    /**
+     * Returns the numbering zone this page belongs to, if assigned.
+     * Absent for {@link PageType#COMPLETION_BLANK} and {@link PageType#FILLER_BLANK} pages,
+     * and for aesthetic pages sandwiched between content pages.
+     */
+    public Optional&lt;PageZone&gt; getPageZone() {
+<span class="fc" id="L66">        return pageZone;</span>
     }
 
     /**
@@ -60,7 +71,7 @@ public final class QuirePage {
      * Absent for {@link PageType#COMPLETION_BLANK} and {@link PageType#FILLER_BLANK} pages.
      */
     public Optional&lt;Integer&gt; getLogicalPageNumber() {
-<span class="fc" id="L63">        return logicalPageNumber;</span>
+<span class="fc" id="L74">        return logicalPageNumber;</span>
     }
 
     /**
@@ -68,7 +79,7 @@ public final class QuirePage {
      * Absent for synthesised pages (aesthetic, blank).
      */
     public Optional&lt;String&gt; getSourceDocumentId() {
-<span class="fc" id="L71">        return sourceDocumentId;</span>
+<span class="fc" id="L82">        return sourceDocumentId;</span>
     }
 
     /**
@@ -76,7 +87,7 @@ public final class QuirePage {
      * Absent when {@link #getSourceDocumentId()} is absent.
      */
     public Optional&lt;Integer&gt; getSourcePageIndex() {
-<span class="fc" id="L79">        return sourcePageIndex;</span>
+<span class="fc" id="L90">        return sourcePageIndex;</span>
     }
 
     /**
@@ -85,17 +96,18 @@ public final class QuirePage {
      * @return a builder copying all fields from this instance
      */
     public Builder toBuilder() {
-<span class="fc" id="L88">        return new Builder()</span>
-<span class="fc" id="L89">                .physicalPosition(this.physicalPosition)</span>
-<span class="fc" id="L90">                .pageType(this.pageType)</span>
-<span class="fc" id="L91">                .logicalPageNumber(this.logicalPageNumber.orElse(null))</span>
-<span class="fc" id="L92">                .sourceDocumentId(this.sourceDocumentId.orElse(null))</span>
-<span class="fc" id="L93">                .sourcePageIndex(this.sourcePageIndex.orElse(null));</span>
+<span class="fc" id="L99">        return new Builder()</span>
+<span class="fc" id="L100">                .physicalPosition(this.physicalPosition)</span>
+<span class="fc" id="L101">                .pageType(this.pageType)</span>
+<span class="fc" id="L102">                .pageZone(this.pageZone.orElse(null))</span>
+<span class="fc" id="L103">                .logicalPageNumber(this.logicalPageNumber.orElse(null))</span>
+<span class="fc" id="L104">                .sourceDocumentId(this.sourceDocumentId.orElse(null))</span>
+<span class="fc" id="L105">                .sourcePageIndex(this.sourcePageIndex.orElse(null));</span>
     }
 
     /** Returns a new {@link Builder}. */
     public static Builder builder() {
-<span class="fc" id="L98">        return new Builder();</span>
+<span class="fc" id="L110">        return new Builder();</span>
     }
 
     /** Builder for {@link QuirePage}. */
@@ -103,12 +115,13 @@ public final class QuirePage {
 
         private int physicalPosition;
         private PageType pageType;
-<span class="fc" id="L106">        private Optional&lt;Integer&gt; logicalPageNumber = Optional.empty();</span>
-<span class="fc" id="L107">        private Optional&lt;String&gt; sourceDocumentId = Optional.empty();</span>
-<span class="fc" id="L108">        private Optional&lt;Integer&gt; sourcePageIndex = Optional.empty();</span>
+<span class="fc" id="L118">        private Optional&lt;PageZone&gt; pageZone = Optional.empty();</span>
+<span class="fc" id="L119">        private Optional&lt;Integer&gt; logicalPageNumber = Optional.empty();</span>
+<span class="fc" id="L120">        private Optional&lt;String&gt; sourceDocumentId = Optional.empty();</span>
+<span class="fc" id="L121">        private Optional&lt;Integer&gt; sourcePageIndex = Optional.empty();</span>
 
-<span class="fc" id="L110">        private Builder() {</span>
-<span class="fc" id="L111">        }</span>
+<span class="fc" id="L123">        private Builder() {</span>
+<span class="fc" id="L124">        }</span>
 
         /**
          * Sets the 0-based physical position in the sequence.
@@ -117,11 +130,11 @@ public final class QuirePage {
          * @return this builder
          */
         public Builder physicalPosition(int physicalPosition) {
-<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (physicalPosition &lt; 0) {</span>
-<span class="fc" id="L121">                throw new IllegalArgumentException(&quot;physicalPosition must be &gt;= 0&quot;);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (physicalPosition &lt; 0) {</span>
+<span class="fc" id="L134">                throw new IllegalArgumentException(&quot;physicalPosition must be &gt;= 0&quot;);</span>
             }
-<span class="fc" id="L123">            this.physicalPosition = physicalPosition;</span>
-<span class="fc" id="L124">            return this;</span>
+<span class="fc" id="L136">            this.physicalPosition = physicalPosition;</span>
+<span class="fc" id="L137">            return this;</span>
         }
 
         /**
@@ -131,8 +144,19 @@ public final class QuirePage {
          * @return this builder
          */
         public Builder pageType(PageType pageType) {
-<span class="fc" id="L134">            this.pageType = Objects.requireNonNull(pageType, &quot;pageType&quot;);</span>
-<span class="fc" id="L135">            return this;</span>
+<span class="fc" id="L147">            this.pageType = Objects.requireNonNull(pageType, &quot;pageType&quot;);</span>
+<span class="fc" id="L148">            return this;</span>
+        }
+
+        /**
+         * Sets the numbering zone, or null if this page belongs to no zone.
+         *
+         * @param pageZone the zone, or null
+         * @return this builder
+         */
+        public Builder pageZone(PageZone pageZone) {
+<span class="fc" id="L158">            this.pageZone = Optional.ofNullable(pageZone);</span>
+<span class="fc" id="L159">            return this;</span>
         }
 
         /**
@@ -142,11 +166,11 @@ public final class QuirePage {
          * @return this builder
          */
         public Builder logicalPageNumber(Integer logicalPageNumber) {
-<span class="fc bfc" id="L145" title="All 4 branches covered.">            if (logicalPageNumber != null &amp;&amp; logicalPageNumber &lt;= 0) {</span>
-<span class="fc" id="L146">                throw new IllegalArgumentException(&quot;logicalPageNumber must be &gt; 0&quot;);</span>
+<span class="fc bfc" id="L169" title="All 4 branches covered.">            if (logicalPageNumber != null &amp;&amp; logicalPageNumber &lt;= 0) {</span>
+<span class="fc" id="L170">                throw new IllegalArgumentException(&quot;logicalPageNumber must be &gt; 0&quot;);</span>
             }
-<span class="fc" id="L148">            this.logicalPageNumber = Optional.ofNullable(logicalPageNumber);</span>
-<span class="fc" id="L149">            return this;</span>
+<span class="fc" id="L172">            this.logicalPageNumber = Optional.ofNullable(logicalPageNumber);</span>
+<span class="fc" id="L173">            return this;</span>
         }
 
         /**
@@ -156,8 +180,8 @@ public final class QuirePage {
          * @return this builder
          */
         public Builder sourceDocumentId(String sourceDocumentId) {
-<span class="fc" id="L159">            this.sourceDocumentId = Optional.ofNullable(sourceDocumentId);</span>
-<span class="fc" id="L160">            return this;</span>
+<span class="fc" id="L183">            this.sourceDocumentId = Optional.ofNullable(sourceDocumentId);</span>
+<span class="fc" id="L184">            return this;</span>
         }
 
         /**
@@ -167,11 +191,11 @@ public final class QuirePage {
          * @return this builder
          */
         public Builder sourcePageIndex(Integer sourcePageIndex) {
-<span class="fc bfc" id="L170" title="All 4 branches covered.">            if (sourcePageIndex != null &amp;&amp; sourcePageIndex &lt; 0) {</span>
-<span class="fc" id="L171">                throw new IllegalArgumentException(&quot;sourcePageIndex must be &gt;= 0&quot;);</span>
+<span class="fc bfc" id="L194" title="All 4 branches covered.">            if (sourcePageIndex != null &amp;&amp; sourcePageIndex &lt; 0) {</span>
+<span class="fc" id="L195">                throw new IllegalArgumentException(&quot;sourcePageIndex must be &gt;= 0&quot;);</span>
             }
-<span class="fc" id="L173">            this.sourcePageIndex = Optional.ofNullable(sourcePageIndex);</span>
-<span class="fc" id="L174">            return this;</span>
+<span class="fc" id="L197">            this.sourcePageIndex = Optional.ofNullable(sourcePageIndex);</span>
+<span class="fc" id="L198">            return this;</span>
         }
 
         /**
@@ -181,37 +205,39 @@ public final class QuirePage {
          * @throws NullPointerException if pageType is not set
          */
         public QuirePage build() {
-<span class="fc" id="L184">            Objects.requireNonNull(pageType, &quot;pageType must be set&quot;);</span>
-<span class="fc" id="L185">            return new QuirePage(this);</span>
+<span class="fc" id="L208">            Objects.requireNonNull(pageType, &quot;pageType must be set&quot;);</span>
+<span class="fc" id="L209">            return new QuirePage(this);</span>
         }
     }
 
     @Override
     public boolean equals(Object obj) {
-<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (this == obj) {</span>
-<span class="fc" id="L192">            return true;</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (this == obj) {</span>
+<span class="fc" id="L216">            return true;</span>
         }
-<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (!(obj instanceof QuirePage other)) {</span>
-<span class="fc" id="L195">            return false;</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (!(obj instanceof QuirePage other)) {</span>
+<span class="fc" id="L219">            return false;</span>
         }
-<span class="fc bfc" id="L197" title="All 4 branches covered.">        return physicalPosition == other.physicalPosition</span>
+<span class="fc bfc" id="L221" title="All 4 branches covered.">        return physicalPosition == other.physicalPosition</span>
                 &amp;&amp; pageType == other.pageType
-<span class="fc bfc" id="L199" title="All 2 branches covered.">                &amp;&amp; logicalPageNumber.equals(other.logicalPageNumber)</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">                &amp;&amp; sourceDocumentId.equals(other.sourceDocumentId)</span>
-<span class="fc bfc" id="L201" title="All 2 branches covered.">                &amp;&amp; sourcePageIndex.equals(other.sourcePageIndex);</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                &amp;&amp; pageZone.equals(other.pageZone)</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">                &amp;&amp; logicalPageNumber.equals(other.logicalPageNumber)</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">                &amp;&amp; sourceDocumentId.equals(other.sourceDocumentId)</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">                &amp;&amp; sourcePageIndex.equals(other.sourcePageIndex);</span>
     }
 
     @Override
     public int hashCode() {
-<span class="fc" id="L206">        return Objects.hash(physicalPosition, pageType, logicalPageNumber,</span>
+<span class="fc" id="L231">        return Objects.hash(physicalPosition, pageType, pageZone, logicalPageNumber,</span>
                 sourceDocumentId, sourcePageIndex);
     }
 
     @Override
     public String toString() {
-<span class="fc" id="L212">        return &quot;QuirePage{&quot;</span>
+<span class="fc" id="L237">        return &quot;QuirePage{&quot;</span>
                 + &quot;physicalPosition=&quot; + physicalPosition
                 + &quot;, pageType=&quot; + pageType
+<span class="fc" id="L240">                + &quot;, pageZone=&quot; + pageZone.map(Enum::name).orElse(&quot;none&quot;)</span>
                 + &quot;, logicalPageNumber=&quot; + logicalPageNumber
                 + '}';
     }

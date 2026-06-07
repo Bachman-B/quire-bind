@@ -1,10 +1,10 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 QuireBind Core,com.maiitsoh.quirebind.core.pdf,PdfPageLoader,0,70,0,4,0,20,0,4,0,2
-QuireBind Core,com.maiitsoh.quirebind.core.pdf,PdfImpositionWriter,34,1235,12,87,9,254,12,59,1,18
+QuireBind Core,com.maiitsoh.quirebind.core.pdf,PdfImpositionWriter,40,1254,16,90,11,259,16,59,1,18
 QuireBind Core,com.maiitsoh.quirebind.core.creep,CreepTransformApplier,0,39,0,0,0,7,0,4,0,4
 QuireBind Core,com.maiitsoh.quirebind.core.creep,CreepCalculator,0,145,0,14,0,33,0,9,0,2
 QuireBind Core,com.maiitsoh.quirebind.core.imposition,ImpositionEngine,0,30,0,0,0,11,0,1,0,1
-QuireBind Core,com.maiitsoh.quirebind.core.imposition,FolioAssigner,0,200,0,46,0,48,0,25,0,2
+QuireBind Core,com.maiitsoh.quirebind.core.imposition,FolioAssigner,0,215,0,46,0,49,0,25,0,2
 QuireBind Core,com.maiitsoh.quirebind.core.imposition,PagePaddingApplier,0,152,0,22,0,27,0,14,0,3
 QuireBind Core,com.maiitsoh.quirebind.core.imposition,SignatureComposer,0,227,0,13,0,41,0,10,0,3
 QuireBind Core,com.maiitsoh.quirebind.core.model,NumberingConfig,0,219,0,20,0,37,0,24,0,14
@@ -14,7 +14,7 @@ QuireBind Core,com.maiitsoh.quirebind.core.model,CreepWarning.Builder,0,86,0,8,0
 QuireBind Core,com.maiitsoh.quirebind.core.model,ImposedSheet,0,127,0,14,0,23,0,17,0,10
 QuireBind Core,com.maiitsoh.quirebind.core.model,ConversionWarning.Builder,0,38,0,4,0,9,0,5,0,3
 QuireBind Core,com.maiitsoh.quirebind.core.model,ImpositionLayout,0,21,0,0,0,4,0,1,0,1
-QuireBind Core,com.maiitsoh.quirebind.core.model,QuirePage.Builder,0,80,0,10,0,23,0,12,0,7
+QuireBind Core,com.maiitsoh.quirebind.core.model,QuirePage.Builder,0,89,0,10,0,26,0,13,0,8
 QuireBind Core,com.maiitsoh.quirebind.core.model,WarningSeverity,0,21,0,0,0,4,0,1,0,1
 QuireBind Core,com.maiitsoh.quirebind.core.model,CreepConfig.Builder,0,98,0,12,0,27,0,14,0,8
 QuireBind Core,com.maiitsoh.quirebind.core.model,PageType,0,27,0,0,0,5,0,1,0,1
@@ -28,6 +28,7 @@ QuireBind Core,com.maiitsoh.quirebind.core.model,CreepSheetResult,0,150,0,16,0,2
 QuireBind Core,com.maiitsoh.quirebind.core.model,MarkConfig.Builder,0,49,0,0,0,18,0,7,0,7
 QuireBind Core,com.maiitsoh.quirebind.core.model,MarkConfig,0,154,0,14,0,27,0,18,0,11
 QuireBind Core,com.maiitsoh.quirebind.core.model,PaddingConfig,0,150,0,14,0,26,0,18,0,11
+QuireBind Core,com.maiitsoh.quirebind.core.model,PageZone,0,21,0,0,0,4,0,1,0,1
 QuireBind Core,com.maiitsoh.quirebind.core.model,SewingConfig.SewingStyle,0,15,0,0,0,3,0,1,0,1
 QuireBind Core,com.maiitsoh.quirebind.core.model,CreepConfig,0,184,0,16,0,34,0,20,0,12
 QuireBind Core,com.maiitsoh.quirebind.core.model,QuireProject.Builder,0,160,0,4,0,40,0,15,0,13
@@ -40,7 +41,7 @@ QuireBind Core,com.maiitsoh.quirebind.core.model,BindingTechnique,0,66,0,3,0,14,
 QuireBind Core,com.maiitsoh.quirebind.core.model,ImpositionGroup,0,21,0,0,0,4,0,1,0,1
 QuireBind Core,com.maiitsoh.quirebind.core.model,ConversionWarning,0,71,0,8,0,15,0,11,0,7
 QuireBind Core,com.maiitsoh.quirebind.core.model,Signature.Builder,0,42,0,2,0,13,0,6,0,5
-QuireBind Core,com.maiitsoh.quirebind.core.model,QuirePage,0,156,0,14,0,29,0,18,0,11
+QuireBind Core,com.maiitsoh.quirebind.core.model,QuirePage,0,187,0,16,0,34,0,20,0,12
 QuireBind Core,com.maiitsoh.quirebind.core.model,ConversionResult.Builder,0,29,0,0,0,10,0,5,0,5
 QuireBind Core,com.maiitsoh.quirebind.core.model,ReadingDirection,0,15,0,0,0,3,0,1,0,1
 QuireBind Core,com.maiitsoh.quirebind.core.model,SewingConfig,0,139,0,14,0,24,0,19,0,12
