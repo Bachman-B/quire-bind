@@ -32,6 +32,22 @@ When a release is made, this section is moved down and given a version number.
 
 ---
 
+## [1.3.3] — 2026-06-07
+
+### Fixed
+- **About dialogue still showed "unknown" in the installed app** — the v1.3.2
+  fix read `application.properties` via a relative path containing `..`.  On
+  disk (Maven's exploded `target/classes/`) the OS normalises `..` and the
+  lookup succeeds, but inside a JAR file entries are string-keyed and no
+  normalisation occurs, so the resource was never found and the version
+  fell back to `"unknown"`.  The path is now absolute
+  (`/com/maiitsoh/quirebind/desktop/application.properties`), which works
+  identically in both environments.  A new unit test loads the resource using
+  the same absolute path so this class of regression is caught by
+  `mvn test` before the app is packaged.
+
+---
+
 ## [1.3.2] — 2026-06-07
 
 ### Fixed

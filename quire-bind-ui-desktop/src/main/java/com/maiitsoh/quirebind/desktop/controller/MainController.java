@@ -494,7 +494,8 @@ public final class MainController implements Initializable {
     }
 
     private static String appVersion() {
-        try (InputStream in = MainController.class.getResourceAsStream("../application.properties")) {
+        try (InputStream in = MainController.class.getResourceAsStream(
+                "/com/maiitsoh/quirebind/desktop/application.properties")) {
             if (in == null) {
                 return "unknown";
             }
